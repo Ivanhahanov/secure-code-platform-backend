@@ -1,0 +1,32 @@
+version: "3.7"
+services:
+  api:
+    build:
+      context: api
+    ports:
+      - 80:80
+    volumes:
+      - type: bind
+        source: ${PWD}/api
+        target: /api
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+    environment:
+      - PWD=$PWD
+    networks:
+      server-network:
+
+
+  mongodb:
+    image: mongo:3.2
+    volumes:
+      - './data:/data/db'
+    networks:
+      server-network:
+
+
+networks:
+  server-network:
+    external: false
+    name: server-network

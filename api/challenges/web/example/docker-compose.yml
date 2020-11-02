@@ -1,0 +1,28 @@
+version: "3.7"
+services:
+  server:
+    build:
+      context: server
+    networks:
+      - web_example
+    ports:
+    - 5000:5000
+
+    command: ['python3','/app/server.py']
+  checker:
+    build:
+      context: checker
+    depends_on:
+      - server
+    volumes:
+    - type: bind
+      source: ${PWD}/solutions
+      target: /solutions
+    environment:
+      FILENAME: 'test.py'
+    command: ['./test.py', 'http://server:5000']
+
+networks:
+  default:
+    external:
+      name: web_example
