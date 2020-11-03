@@ -1,4 +1,6 @@
 from . import client
+import requests
+
 
 def test_containers_list():
     response = client.get("/admin/containers_list")

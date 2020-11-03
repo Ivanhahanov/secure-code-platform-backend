@@ -8,13 +8,16 @@ client = docker.from_env()
 router = APIRouter()
 db = mongo.secure_code_platform
 
+
 @router.get('/containers_list')
 def container_list():
     return [container.name for container in client.containers.list()]
 
+
 @router.get('/check_database')
 def check_database():
     return mongo.list_database_names()
+
 
 @router.post('/run_example_container')
 def run_containers(names: Optional[list] = None):
