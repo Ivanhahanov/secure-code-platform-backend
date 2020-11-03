@@ -51,7 +51,7 @@ def get_challenges_list(tags: List[str] = None):
     return {"challenges": challenges_list}
 
 
-@router.post('/add_web_challenge')
+@router.put('/add_web_challenge')
 async def add_web_challenge(challenge: WebChallenge):
     challenges.insert(challenge.dict(by_alias=True))
     return challenge
