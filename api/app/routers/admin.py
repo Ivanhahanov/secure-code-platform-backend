@@ -14,6 +14,11 @@ def container_list():
     return [container.name for container in client.containers.list()]
 
 
+@router.get('/users')
+def users_list():
+    return {'users': list(db.users.find({}, {'_id': False}))}
+
+
 @router.get('/check_database')
 def check_database():
     return mongo.list_database_names()
