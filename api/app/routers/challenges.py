@@ -13,6 +13,7 @@ challenges = db.challenges
 upload_path = '/api/solutions/'
 challenges_categories = ['web', 'crypto', 'forensic', 'network', 'linux', 'reverse']
 challenges_difficult = ['easy', 'medium', 'hard', 'impossible']
+solution_path = os.getenv('PWD') + upload_path
 
 
 class WriteUp(BaseModel):
@@ -40,8 +41,8 @@ class Challenge(BaseModel):
     challenge_modified: datetime
 
 
-class WebChallenge(Challenge):
-    web_image_name: str
+class ContainerChallenge(Challenge):
+    image_name: str
     checker_image_name: str
 
 
@@ -59,9 +60,16 @@ def category_list(current_user: User = Depends(get_current_active_user)):
     return {'username': current_user.username, "category_list": challenges_categories}
 
 
-@router.put('/add_web_challenge')
-async def add_web_challenge(challenge: WebChallenge,
-                            current_user: User = Depends(get_current_user_if_editor)):
+@router.put('/add_container_challenge')
+async def add_container_challenge(challenge: ContainerChallenge,
+                                  current_user: User = Depends(get_current_user_if_editor)):
+    challenge = new_challenge_filter(challenge, current_user)
+    challenges.insert(challenge.dict(by_alias=True))
+    return challenge
+
+
+@router.put('/add_challenge')
+async def add_web_challenge(challenge: Challenge, current_user: User = Depends(get_current_user_if_editor)):
     challenge = new_challenge_filter(challenge, current_user)
     challenges.insert(challenge.dict(by_alias=True))
     return challenge
@@ -81,13 +89,6 @@ async def add_challenge_with_files(challenge_name: str,
             'checkers_file': checkers_file.filename}
 
 
-@router.put('/add_challenge')
-async def add_web_challenge(challenge: Challenge, current_user: User = Depends(get_current_user_if_editor)):
-    challenge = new_challenge_filter(challenge, current_user)
-    challenges.insert(challenge.dict(by_alias=True))
-    return challenge
-
-
 @router.get('/show_task')
 def show_task(current_user: User = Depends(get_current_active_user)):
     return {'username': current_user.username, 'pwd': list(os.listdir('api/challenges/web/example'))}
@@ -95,14 +96,12 @@ def show_task(current_user: User = Depends(get_current_active_user)):
 
 @router.post("/upload_solution/")
 async def upload_solution(challenge_title: str, current_user: User = Depends(get_current_active_user),
-                          check: Optional[bool] = False, file: UploadFile = File(...)):
+                          file: UploadFile = File(...)):
     timestamp = str(datetime.now().timestamp()).replace('.', '')
     filename = f"{timestamp}_{challenge_title.replace(' ', '_')}_{file.filename}"
     upload_file(filename, file)
-    if check:
-        result, message = await check_web_solution(filename, challenge_title)
-        return {'result': result, 'message': message}
-    return {'username': current_user.username, "filename": filename}
+    result, message = await check_container_solution(filename, challenge_title)
+    return {'username': current_user.username, 'result': result, 'message': message}
 
 
 def upload_file(filename, file):
@@ -111,19 +110,11 @@ def upload_file(filename, file):
     return True
 
 
-def get_challenge_answer():
-    return 'Flag{checker_example_flag}'
-
-
-def get_checker_image_name(challenge_name):
-    return 'checker_example_server'
-
-
-async def check_web_solution(filename, challenge_name):
+async def check_container_solution(filename, challenge_name):
     script = f'/solutions/{filename}'
     os.chmod(upload_path + filename, stat.S_IEXEC)
-    solution_path = os.getenv('PWD') + upload_path
-    server = client.containers.get(get_checker_image_name(challenge_name))
+    challenge = ContainerChallenge(**challenges.find_one({'title': challenge_name}, {'_id': False}))
+    server = client.containers.get('checker_' + challenge.image_name)
     server_ip = server.attrs['NetworkSettings']['Networks']['checkers-network']['IPAddress']
     try:
         container = client.containers.run(image='example_checker',
@@ -143,13 +134,13 @@ async def check_web_solution(filename, challenge_name):
         os.remove(upload_path + filename)
 
     message = container.decode().strip()
-    if get_challenge_answer() == message:
+    if challenge.output_example == message:
         return True, 'Task Solved'
     return False, 'Invalid Output'
 
 
 def new_challenge_filter(challenge, user):
-    if challenge.category_tags not in challenges_categories:
+    if set(challenge.category_tags).issuperset(set(challenges_categories)):
         raise HTTPException(status_code=400, detail='Invalid Category')
     if challenge.difficulty_tag not in challenges_difficult:
         raise HTTPException(status_code=400, detail='Invalid Difficult Tag')
