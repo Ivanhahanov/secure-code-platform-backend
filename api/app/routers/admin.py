@@ -7,6 +7,7 @@ client = docker.from_env()
 router = APIRouter()
 db = mongo.secure_code_platform
 
+
 @router.get('/containers_list')
 def container_list(current_user: User = Depends(get_current_user_if_admin)):
     return {'user': current_user.username, 'role': current_user.user_role,
@@ -28,34 +29,20 @@ def change_user_role(username: str, role: str, current_user: User = Depends(get_
     return {'username': current_user.username, 'changed': dict(user)}
 
 
-@router.post('/run_example_container')
-def run_containers(current_user: User = Depends(get_current_user_if_admin), names: Optional[list] = None):
-    client.containers.run(image='example_server',
-                          name='example_server',
-                          auto_remove=True,
-                          detach=True,
-                          network='checkers-network',
-                          command=['python3', '/app/server.py']
-                          )
-    server = client.containers.get('example_server')
-    return {'username': current_user.username,
-            'ip': server.attrs['NetworkSettings']['Networks']['checkers-network']['IPAddress']}
-
-
 @router.post('/run_web_checkers_containers')
 def run_web_checkers_containers(current_user: User = Depends(get_current_user_if_admin)):
-    container_ip = run_web_container_with_flag('example_server',
-                                               'checkers-network',
-                                               'Flag{checker_example_flag}')
+    container_ip = run_web_container_with_flag(docker_image_name='example_server',
+                                               network='checkers-network',
+                                               flag='Flag{checker_example_flag}')
     return {'username': current_user.username, 'container_ip': container_ip}
 
 
 @router.post('/run_web_containers')
 def run_containers(current_user: User = Depends(get_current_user_if_admin)):
-    container_ip = run_web_container_with_flag('example_server',
-                                               None,
-                                               'Flag{checker_example_flag}',
-                                               ports={'5000/tcp': 5000},
+    container_ip = run_web_container_with_flag(docker_image_name='example_server',
+                                               network=None,
+                                               flag='Flag{example_flag}',
+                                               ports={'5000/tcp': ('0.0.0.0', 5000)},
                                                prod=True)
 
     return {'username': current_user.username, 'container_ip': container_ip}
