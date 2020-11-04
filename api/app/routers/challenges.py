@@ -49,7 +49,7 @@ class WebChallenge(Challenge):
 def get_challenges_list(current_user: User = Depends(get_current_active_user), tags: List[str] = None):
     if tags:
         challenges_list = challenges.find({'category_tags': {"$in": tags}}, {'_id': False})
-        return {"challenges": dict(challenges_list)}
+        return {"challenges": list(challenges_list)}
     challenges_list = list(challenges.find({}, {'_id': False}))
     return {'username': current_user.username, "challenges": challenges_list}
 
@@ -134,8 +134,10 @@ async def check_web_solution(filename, challenge_name):
         return False, 'Image Not Found'
     except docker.errors.APIError:
         return False, 'docker server return error'
+    finally:
+        os.remove(upload_path + filename)
+
     message = container.decode().strip()
-    os.remove(upload_path + filename)
     if get_challenge_answer() == message:
         return True, 'Task Solved'
     return False, 'Invalid Output'
