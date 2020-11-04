@@ -26,7 +26,7 @@ def change_user_role(username: str, role: str, current_user: User = Depends(get_
     user = users.find_one_and_update({'username': username}, {'$set': {'user_role': role}}, {'_id': False})
     if user is None:
         raise HTTPException(status_code=400, detail="invalid User")
-    return dict(user)
+    return {'username': current_user.username, 'changed': dict(user)}
 
 
 @router.post('/run_example_container')
