@@ -16,7 +16,7 @@ def container_list(current_user: User = Depends(get_current_user_if_admin)):
 
 @router.get('/users')
 def users_list(current_user: User = Depends(get_current_user_if_admin)):
-    return {'username': current_user.username, 'users': dict(db.users.find({}, {'_id': False}))}
+    return {'username': current_user.username, 'users': list(db.users.find({}, {'_id': False}))}
 
 
 @router.get('/change_user_role')
@@ -24,6 +24,7 @@ def change_user_role(username: str, role: str, current_user: User = Depends(get_
     if role not in roles:
         raise HTTPException(status_code=400, detail="invalid Role")
     user = users.find_one_and_update({'username': username}, {'$set': {'user_role': role}}, {'_id': False})
+    # TODO: get updated user
     if user is None:
         raise HTTPException(status_code=400, detail="invalid User")
     return {'username': current_user.username, 'changed': dict(user)}
