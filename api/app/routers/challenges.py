@@ -95,8 +95,8 @@ async def upload_solution(challenge_title: str, current_user: User = Depends(get
     filename = f"{timestamp}_{challenge_title.replace(' ', '_')}_{file.filename}"
     upload_file(filename, file)
     if check:
-        result = await check_web_solution(filename, challenge_title)
-        return {'result': result}
+        result, message = await check_web_solution(filename, challenge_title)
+        return {'result': result, 'message': message}
     return {'username': current_user.username, "filename": filename}
 
 
@@ -120,18 +120,25 @@ async def check_web_solution(filename, challenge_name):
     solution_path = os.getenv('PWD') + upload_path
     server = client.containers.get(get_checker_image_name(challenge_name))
     server_ip = server.attrs['NetworkSettings']['Networks']['checkers-network']['IPAddress']
-    container = client.containers.run(image='example_checker',
-                                      auto_remove=True,
-                                      volumes={solution_path: {'bind': '/solutions'}},
-                                      detach=False,
-                                      network='checkers-network',
-                                      command=[script, f'http://{server_ip}:5000']
-                                      )
+    try:
+        container = client.containers.run(image='example_checker',
+                                          auto_remove=True,
+                                          volumes={solution_path: {'bind': '/solutions'}},
+                                          detach=False,
+                                          network='checkers-network',
+                                          command=[script, f'http://{server_ip}:5000']
+                                          )
+    except docker.errors.ContainerError:
+        return False, 'Error in Container'
+    except docker.errors.ImageNotFound:
+        return False, 'Image Not Found'
+    except docker.errors.APIError:
+        return False, 'docker server return error'
     message = container.decode().strip()
     os.remove(upload_path + filename)
     if get_challenge_answer() == message:
-        return True
-    return False
+        return True, 'Task Solved'
+    return False, 'Invalid Output'
 
 
 def new_challenge_filter(challenge, user):
