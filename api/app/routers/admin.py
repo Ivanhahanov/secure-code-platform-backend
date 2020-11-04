@@ -1,31 +1,36 @@
 from fastapi import APIRouter
-from typing import Optional
-from . import mongo
+from . import *
 import docker
 
 client = docker.from_env()
 
 router = APIRouter()
 db = mongo.secure_code_platform
-
+roles = ('admin', 'editor', 'user')
 
 @router.get('/containers_list')
-def container_list():
-    return [container.name for container in client.containers.list()]
+def container_list(current_user: User = Depends(get_current_user_if_admin)):
+    return {'user': current_user.username, 'role': current_user.user_role,
+            'containers': [container.name for container in client.containers.list()]}
 
 
 @router.get('/users')
-def users_list():
-    return {'users': list(db.users.find({}, {'_id': False}))}
+def users_list(current_user: User = Depends(get_current_user_if_admin)):
+    return {'username': current_user.username, 'users': dict(db.users.find({}, {'_id': False}))}
 
 
-@router.get('/check_database')
-def check_database():
-    return mongo.list_database_names()
+@router.get('/change_user_role')
+def change_user_role(username: str, role: str, current_user: User = Depends(get_current_user_if_admin)):
+    if role not in roles:
+        raise HTTPException(status_code=400, detail="invalid Role")
+    user = users.find_one_and_update({'username': username}, {'$set': {'user_role': role}}, {'_id': False})
+    if user is None:
+        raise HTTPException(status_code=400, detail="invalid User")
+    return dict(user)
 
 
 @router.post('/run_example_container')
-def run_containers(names: Optional[list] = None):
+def run_containers(current_user: User = Depends(get_current_user_if_admin), names: Optional[list] = None):
     client.containers.run(image='example_server',
                           name='example_server',
                           auto_remove=True,
@@ -34,26 +39,27 @@ def run_containers(names: Optional[list] = None):
                           command=['python3', '/app/server.py']
                           )
     server = client.containers.get('example_server')
-    return {'ip': server.attrs['NetworkSettings']['Networks']['checkers-network']['IPAddress']}
+    return {'username': current_user.username,
+            'ip': server.attrs['NetworkSettings']['Networks']['checkers-network']['IPAddress']}
 
 
 @router.post('/run_web_checkers_containers')
-def run_web_checkers_containers():
+def run_web_checkers_containers(current_user: User = Depends(get_current_user_if_admin)):
     container_ip = run_web_container_with_flag('example_server',
                                                'checkers-network',
                                                'Flag{checker_example_flag}')
-    return {'container_ip': container_ip}
+    return {'username': current_user.username, 'container_ip': container_ip}
 
 
 @router.post('/run_web_containers')
-def run_containers():
+def run_containers(current_user: User = Depends(get_current_user_if_admin)):
     container_ip = run_web_container_with_flag('example_server',
                                                None,
                                                'Flag{checker_example_flag}',
                                                ports={'5000/tcp': 5000},
                                                prod=True)
 
-    return {'container_ip': container_ip}
+    return {'username': current_user.username, 'container_ip': container_ip}
 
 
 def get_container_ip(container_name, prod):

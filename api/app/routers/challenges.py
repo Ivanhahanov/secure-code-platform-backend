@@ -1,7 +1,7 @@
 from fastapi import APIRouter, UploadFile, File
 from typing import Optional, Set, List
 from pydantic import BaseModel
-from . import mongo
+from . import *
 from datetime import datetime
 import os, stat
 import docker
@@ -27,50 +27,61 @@ class Challenge(BaseModel):
     input_example: str
     output_example: str
     score: int
-    category_tags: List[str] = None
-    author: str
-    first_blood: str
+    category_tags: List[str]
+    author: str = None
+    first_blood: str = None
     solutions_num: int
     wrong_solutions_num: int
     difficulty_tag: str
-    difficulty_rating: int
+    difficulty_rating: int = None
     challenge_created: datetime
     challenge_modified: datetime
 
 
 class WebChallenge(Challenge):
-    image_name: str
+    web_image_name: str
+    checker_image_name: str
 
 
 @router.post('/list')
-def get_challenges_list(tags: List[str] = None):
+def get_challenges_list(current_user: User = Depends(get_current_active_user), tags: List[str] = None):
     if tags:
         challenges_list = challenges.find({'category_tags': {"$in": tags}}, {'_id': False})
-        return {"challenges": list(challenges_list)}
+        return {"challenges": dict(challenges_list)}
     challenges_list = list(challenges.find({}, {'_id': False}))
-    return {"challenges": challenges_list}
+    return {'username': current_user.username, "challenges": challenges_list}
 
 
 @router.put('/add_web_challenge')
-async def add_web_challenge(challenge: WebChallenge):
+async def add_web_challenge(challenge: WebChallenge,
+                            current_user: User = Depends(get_current_user_if_editor)):
+    challenge.author = current_user.username
+    challenges.insert(challenge.dict(by_alias=True))
+    return challenge
+
+
+@router.put('/add_challenge')
+async def add_web_challenge(challenge: Challenge, current_user: User = Depends(get_current_user_if_editor)):
+    challenge.author = current_user.username
     challenges.insert(challenge.dict(by_alias=True))
     return challenge
 
 
 @router.get('/show_task')
-def show_task():
-    return {'pwd': list(os.listdir('api/challenges/web/example'))}
+def show_task(current_user: User = Depends(get_current_active_user)):
+    return {'username': current_user.username,'pwd': list(os.listdir('api/challenges/web/example'))}
 
 
 @router.post("/upload_solution/")
-async def upload_solution(challenge_title: str, check: Optional[bool] = False, file: UploadFile = File(...)):
+async def upload_solution(challenge_title: str, current_user: User = Depends(get_current_active_user),
+                          check: Optional[bool] = False, file: UploadFile = File(...)):
     timestamp = str(datetime.now().timestamp()).replace('.', '')
     filename = f"{timestamp}_{challenge_title.replace(' ', '_')}_{file.filename}"
     upload_file(filename, file)
     if check:
         result = await check_web_solution(filename, challenge_title)
         return {'result': result}
-    return {"filename": filename}
+    return {'username': current_user.username, "filename": filename}
 
 
 def upload_file(filename, file):
