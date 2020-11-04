@@ -11,7 +11,7 @@ router = APIRouter()
 db = mongo.secure_code_platform
 challenges = db.challenges
 upload_path = '/api/solutions/'
-challenges_categories = ['web', 'crypto', 'forensic', 'network', 'pwn', 'misc']
+challenges_categories = ['web', 'crypto', 'forensic', 'network', 'linux', 'reverse']
 challenges_difficult = ['easy', 'medium', 'hard', 'impossible']
 
 
@@ -52,6 +52,11 @@ def get_challenges_list(current_user: User = Depends(get_current_active_user), t
         return {"challenges": list(challenges_list)}
     challenges_list = list(challenges.find({}, {'_id': False}))
     return {'username': current_user.username, "challenges": challenges_list}
+
+
+@router.post('/category_list')
+def category_list(current_user: User = Depends(get_current_active_user)):
+    return {'username': current_user.username, "category_list": challenges_categories}
 
 
 @router.put('/add_web_challenge')
