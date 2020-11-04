@@ -45,6 +45,8 @@ async def register_user(user: UserInDB):
     users_list = [user['username'] for user in db.users.find({})]
     if user.username in users_list:
         raise HTTPException(status_code=409, detail="Users exists")
+    if user.user_role not in roles[1:]:
+        raise HTTPException(status_code=400, detail="Invalid Role")
     user.password = get_password_hash(user.password)
     users.insert(user.dict(by_alias=True))
     return {'user': user}

@@ -6,7 +6,6 @@ client = docker.from_env()
 
 router = APIRouter()
 db = mongo.secure_code_platform
-roles = ('admin', 'editor', 'user')
 
 @router.get('/containers_list')
 def container_list(current_user: User = Depends(get_current_user_if_admin)):
