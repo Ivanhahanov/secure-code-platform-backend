@@ -1,9 +1,9 @@
 from fastapi import APIRouter, UploadFile, File
-from typing import Optional, Set, List
-from pydantic import BaseModel
+from typing import List
 from . import *
 from datetime import datetime
-import os, stat
+import os
+import stat
 import docker
 
 client = docker.from_env()
@@ -11,6 +11,8 @@ router = APIRouter()
 db = mongo.secure_code_platform
 challenges = db.challenges
 upload_path = '/api/solutions/'
+challenges_categories = ['web', 'crypto', 'forensic', 'network', 'pwn', 'misc']
+challenges_difficult = ['easy', 'medium', 'hard', 'impossible']
 
 
 class WriteUp(BaseModel):
@@ -30,8 +32,8 @@ class Challenge(BaseModel):
     category_tags: List[str]
     author: str = None
     first_blood: str = None
-    solutions_num: int
-    wrong_solutions_num: int
+    solutions_num: int = 0
+    wrong_solutions_num: int = 0
     difficulty_tag: str
     difficulty_rating: int = None
     challenge_created: datetime
@@ -55,21 +57,35 @@ def get_challenges_list(current_user: User = Depends(get_current_active_user), t
 @router.put('/add_web_challenge')
 async def add_web_challenge(challenge: WebChallenge,
                             current_user: User = Depends(get_current_user_if_editor)):
-    challenge.author = current_user.username
+    challenge = new_challenge_filter(challenge, current_user)
     challenges.insert(challenge.dict(by_alias=True))
     return challenge
 
 
+@router.put('/add_files_to_challenge')
+async def add_challenge_with_files(challenge_name: str,
+                                   public_file: UploadFile = File(...),
+                                   checkers_file: UploadFile = File(...),
+                                   current_user: User = Depends(get_current_user_if_editor)):
+    all_challenges_name = [challenge['title'] for challenge in challenges.find({}, {'_id': False})]
+    if challenge_name not in all_challenges_name:
+        raise HTTPException(status_code=400, detail='Invalid challenge name')
+    return {'username': current_user.username,
+            'challenge_name': challenge_name,
+            'public_filename': public_file.filename,
+            'checkers_file': checkers_file.filename}
+
+
 @router.put('/add_challenge')
 async def add_web_challenge(challenge: Challenge, current_user: User = Depends(get_current_user_if_editor)):
-    challenge.author = current_user.username
+    challenge = new_challenge_filter(challenge, current_user)
     challenges.insert(challenge.dict(by_alias=True))
     return challenge
 
 
 @router.get('/show_task')
 def show_task(current_user: User = Depends(get_current_active_user)):
-    return {'username': current_user.username,'pwd': list(os.listdir('api/challenges/web/example'))}
+    return {'username': current_user.username, 'pwd': list(os.listdir('api/challenges/web/example'))}
 
 
 @router.post("/upload_solution/")
@@ -116,3 +132,12 @@ async def check_web_solution(filename, challenge_name):
     if get_challenge_answer() == message:
         return True
     return False
+
+
+def new_challenge_filter(challenge, user):
+    if challenge.category_tags not in challenges_categories:
+        raise HTTPException(status_code=400, detail='Invalid Category')
+    if challenge.difficulty_tag not in challenges_difficult:
+        raise HTTPException(status_code=400, detail='Invalid Difficult Tag')
+    challenge.author = user.username
+    return challenge
