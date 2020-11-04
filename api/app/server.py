@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from api.app.routers import challenges, scoreboard, auth, admin, user
 app = FastAPI()
 
-logging.basicConfig(level=logging.DEBUG)
+
 origins = [
     "http://localhost",
     "http://localhost:3000",
