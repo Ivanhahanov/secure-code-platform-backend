@@ -34,6 +34,7 @@ class User(BaseModel):
     email: Optional[str] = None
     full_name: Optional[str] = None
     disabled: Optional[bool] = False
+    user_role: str = 'user'
 
 
 class UserInDB(User):
@@ -80,4 +81,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 async def get_current_active_user(current_user: User = Depends(get_current_user)):
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
+    return current_user
+
+
+async def get_current_user_if_admin(current_user: User = Depends(get_current_user)):
+    if current_user.user_role != 'admin':
+        raise HTTPException(status_code=403, detail="Non admin user")
+    return current_user
+
+
+async def get_current_user_if_editor(current_user: User = Depends(get_current_user)):
+    if current_user.user_role not in ('editor', 'admin'):
+        raise HTTPException(status_code=403, detail="Permission denied")
     return current_user
