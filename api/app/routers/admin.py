@@ -1,11 +1,15 @@
 from fastapi import APIRouter
 from . import *
+from .challenges import ContainerChallenge
 import docker
+import string
+import random
 
 client = docker.from_env()
 
 router = APIRouter()
 db = mongo.secure_code_platform
+challenges = db.challenges
 
 
 @router.get('/containers_list')
@@ -31,22 +35,41 @@ def change_user_role(username: str, role: str, current_user: User = Depends(get_
 
 
 @router.post('/run_web_checkers_containers')
-def run_web_checkers_containers(current_user: User = Depends(get_current_user_if_admin)):
-    container_ip = run_web_container_with_flag(docker_image_name='example_server',
+def run_web_checkers_containers(challenge_id: str, current_user: User = Depends(get_current_user_if_admin)):
+    challenge = get_challenge(challenge_id)
+    r.set(challenge_id, generate_random_flag())
+    container_ip = run_web_container_with_flag(docker_image_name=challenge.image_name,
                                                network='checkers-network',
-                                               flag='Flag{checker_example_flag}')
+                                               flag=r.get(challenge_id).decode())
     return {'username': current_user.username, 'container_ip': container_ip}
 
 
 @router.post('/run_web_containers')
-def run_containers(current_user: User = Depends(get_current_user_if_admin)):
-    container_ip = run_web_container_with_flag(docker_image_name='example_server',
+async def run_containers(challenge_id: str, current_user: User = Depends(get_current_user_if_admin)):
+    challenge = get_challenge(challenge_id)
+    container_ip = run_web_container_with_flag(docker_image_name=challenge.image_name,
                                                network=None,
-                                               flag='Flag{example_flag}',
+                                               flag=challenge.flag,
                                                ports={'5000/tcp': ('0.0.0.0', 5000)},
                                                prod=True)
-
     return {'username': current_user.username, 'container_ip': container_ip}
+
+
+def generate_random_flag():
+    symbols = string.digits + string.ascii_letters
+    flag = ''.join(random.choice(symbols) for i in range(27))
+    return 'Flag{%s}' % flag
+
+
+def get_challenge(challenge_id):
+    challenge = ContainerChallenge(**challenges.find_one({'_id': ObjectId(challenge_id)}, {'_id': False}))
+    if not check_image(challenge.image_name):
+        raise HTTPException(status_code=400, detail='Container not valid')
+    return challenge
+
+
+def check_image(image_name):
+    return True
 
 
 def get_container_ip(container_name, prod):
@@ -61,7 +84,7 @@ def run_web_container_with_flag(docker_image_name, network, flag, ports=None, pr
     if prod:
         container_name = docker_image_name.split('/')[-1]
     else:
-        container_name = 'checker_' + docker_image_name.split('/')[-1]
+        container_name = 'test_' + docker_image_name.split('/')[-1]
     client.containers.run(image=docker_image_name,
                           name=container_name,
                           auto_remove=True,
@@ -69,6 +92,5 @@ def run_web_container_with_flag(docker_image_name, network, flag, ports=None, pr
                           network=network,
                           ports=ports,
                           environment=[f'SCP_FLAG={flag}'],
-                          command=['python3', '/app/server.py']
                           )
     return get_container_ip(container_name, prod)
