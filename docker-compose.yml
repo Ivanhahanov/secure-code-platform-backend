@@ -16,17 +16,38 @@ services:
       - PWD=$PWD
     networks:
       server-network:
+      checkers-network:
 
 
   mongodb:
-    image: mongo:3.2
+    image: mongo:4.4.1
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: changeme
     volumes:
-      - './data:/data/db'
+      - $PWD/data:/data/db
     networks:
       server-network:
 
+  redis:
+    image: "redis:alpine"
+    command: redis-server --requirepass sOmE_sEcUrE_pAsS
+    ports:
+      - "6379:6379"
+    volumes:
+      - $PWD/redis-data:/var/lib/redis
+      - $PWD/redis.conf:/usr/local/etc/redis/redis.conf
+
+    environment:
+      - REDIS_REPLICATION_MODE=master
+    networks:
+      checkers-network:
 
 networks:
   server-network:
     external: false
     name: server-network
+
+  checkers-network:
+    external: false
+    name: checkers-network
