@@ -14,6 +14,9 @@ services:
         target: /var/run/docker.sock
     environment:
       - PWD=$PWD
+      - REDIS_PASS=$REDIS_PASS
+      - MONGODB_USER=$MONGODB_USER
+      - MONGODB_PASS=$MONGODB_PASS
     networks:
       server-network:
       checkers-network:
@@ -22,8 +25,8 @@ services:
   mongodb:
     image: mongo:4.4.1
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: changeme
+      MONGO_INITDB_ROOT_USERNAME: $MONGODB_USER
+      MONGO_INITDB_ROOT_PASSWORD: $MONGODB_PASS
     volumes:
       - $PWD/data:/data/db
     networks:

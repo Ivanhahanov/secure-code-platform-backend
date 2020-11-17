@@ -1,5 +1,6 @@
 from redis import Redis
 from pymongo import MongoClient
+from bson import ObjectId
 from typing import Optional
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -7,9 +8,15 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException, status
-
-r = Redis(host='redis', port=6379, db=0, password="sOmE_sEcUrE_pAsS")
-mongo = MongoClient('mongodb', 27017)
+import os
+redis_pass = os.getenv("REDIS_PASS")
+r = Redis(host='redis', port=6379, db=0, password=redis_pass)
+mongodb_user = os.getenv("MONGODB_USER")
+mongodb_pass = os.getenv("MONGODB_PASS")
+mongo = MongoClient(host='mongodb',
+                    port=27017,
+                    username=mongodb_user,
+                    password=mongodb_pass)
 db = mongo.secure_code_platform
 users = db.users
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/token")
