@@ -2,5 +2,6 @@
 
 #### Build
 ```bash
-./run.sh
+docker-compose up -d
 ```
+View [API](http://localhost)
