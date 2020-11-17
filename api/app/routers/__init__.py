@@ -1,7 +1,7 @@
 from redis import Redis
 from pymongo import MongoClient
 from bson import ObjectId
-from typing import Optional
+from typing import Optional, Dict
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException, status
 import os
+
 redis_pass = os.getenv("REDIS_PASS")
 r = Redis(host='redis', port=6379, db=0, password=redis_pass)
 mongodb_user = os.getenv("MONGODB_USER")
@@ -46,6 +47,12 @@ class User(BaseModel):
 
 class UserInDB(User):
     password: str
+
+
+class UserScriptKiddy(User):
+    solved_challenges_id: Dict[str, datetime] = {}
+    users_score: int = 0
+    users_group: str = None
 
 
 def get_user(username: str):

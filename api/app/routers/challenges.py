@@ -102,6 +102,7 @@ async def upload_solution(challenge_id: str, current_user: User = Depends(get_cu
     filename = f"{timestamp}_{challenge_id}_{file.filename}"
     upload_file(filename, file)
     result, message = await check_container_solution(filename, challenge_id)
+    write_result_to_user_stat(current_user, challenge_id, result)
     return {'username': current_user.username, 'result': result, 'message': message}
 
 
@@ -138,6 +139,16 @@ async def check_container_solution(filename, challenge_id):
     if get_challenge_flag(challenge_id) == message:
         return True, 'Task Solved'
     return False, 'Invalid Output'
+
+
+def write_result_to_user_stat(current_user, challenge_id, result):
+    user = UserScriptKiddy(**users.find_one({"username": current_user.username}, {'_id': False}))
+    challenge = ContainerChallenge(**challenges.find_one({"_id": ObjectId(challenge_id)}, {'_id': False}))
+    if result:
+        if not user.solved_challenges_id.get(challenge_id, None):
+            user.solved_challenges_id[challenge_id] = datetime.now()
+            user.users_score += challenge.score
+            users.update_one({'username': current_user.username}, {'$set': user.dict(by_alias=True)})
 
 
 def get_challenge_flag(challenge_id):

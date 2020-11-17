@@ -52,7 +52,7 @@ async def register_user(user: UserInDB):
     return {'user': user}
 
 
-@router.get("/me", response_model=User)
+@router.get("/me")
 async def read_users_me(current_user: User = Depends(get_current_active_user)):
-    return current_user
-
+    user = UserScriptKiddy(**users.find_one({"username": current_user.username}, {'_id': False}))
+    return user
