@@ -37,13 +37,14 @@ class Challenge(BaseModel):
     wrong_solutions_num: int = 0
     difficulty_tag: str
     difficulty_rating: int = None
-    challenge_created: datetime
-    challenge_modified: datetime
+    challenge_created: datetime = None
+    challenge_modified: datetime = None
 
 
 class ContainerChallenge(Challenge):
     image_name: str
     checker_image_name: str
+    flag: str
 
 
 @router.post('/list')
@@ -95,12 +96,12 @@ def show_task(current_user: User = Depends(get_current_active_user)):
 
 
 @router.post("/upload_solution/")
-async def upload_solution(challenge_title: str, current_user: User = Depends(get_current_active_user),
+async def upload_solution(challenge_id: str, current_user: User = Depends(get_current_active_user),
                           file: UploadFile = File(...)):
     timestamp = str(datetime.now().timestamp()).replace('.', '')
-    filename = f"{timestamp}_{challenge_title.replace(' ', '_')}_{file.filename}"
+    filename = f"{timestamp}_{challenge_id}_{file.filename}"
     upload_file(filename, file)
-    result, message = await check_container_solution(filename, challenge_title)
+    result, message = await check_container_solution(filename, challenge_id)
     return {'username': current_user.username, 'result': result, 'message': message}
 
 
@@ -110,14 +111,14 @@ def upload_file(filename, file):
     return True
 
 
-async def check_container_solution(filename, challenge_name):
+async def check_container_solution(filename, challenge_id):
     script = f'/solutions/{filename}'
     os.chmod(upload_path + filename, stat.S_IEXEC)
-    challenge = ContainerChallenge(**challenges.find_one({'title': challenge_name}, {'_id': False}))
-    server = client.containers.get('checker_' + challenge.image_name)
+    challenge = ContainerChallenge(**challenges.find_one({'_id': ObjectId(challenge_id)}, {'_id': False}))
+    server = client.containers.get('test_' + challenge.image_name.split('/')[-1])
     server_ip = server.attrs['NetworkSettings']['Networks']['checkers-network']['IPAddress']
     try:
-        container = client.containers.run(image='example_checker',
+        container = client.containers.run(image=challenge.checker_image_name,
                                           auto_remove=True,
                                           volumes={solution_path: {'bind': '/solutions'}},
                                           detach=False,
@@ -134,9 +135,13 @@ async def check_container_solution(filename, challenge_name):
         os.remove(upload_path + filename)
 
     message = container.decode().strip()
-    if challenge.output_example == message:
+    if get_challenge_flag(challenge_id) == message:
         return True, 'Task Solved'
     return False, 'Invalid Output'
+
+
+def get_challenge_flag(challenge_id):
+    return r.get(challenge_id).decode()
 
 
 def new_challenge_filter(challenge, user):
@@ -145,4 +150,6 @@ def new_challenge_filter(challenge, user):
     if challenge.difficulty_tag not in challenges_difficult:
         raise HTTPException(status_code=400, detail='Invalid Difficult Tag')
     challenge.author = user.username
+    challenge.challenge_created = datetime.now()
+    challenge.challenge_modified = datetime.now()
     return challenge
