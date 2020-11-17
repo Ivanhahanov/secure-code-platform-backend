@@ -3,7 +3,9 @@ from flask import Flask
 import os
 
 app = Flask(__name__)
-flag = os.getenv('SCP_FLAG')
+flag = os.getenv('SCP_FLAG', None)
+if not flag:
+    flag = 'No flag in environment'
 
 
 @app.route('/')
