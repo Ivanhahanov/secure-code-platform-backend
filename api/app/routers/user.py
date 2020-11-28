@@ -56,3 +56,16 @@ async def register_user(user: UserInDB):
 async def read_users_me(current_user: User = Depends(get_current_active_user)):
     user = UserScriptKiddy(**users.find_one({"username": current_user.username}, {'_id': False}))
     return user
+
+
+@router.post("/change_password")
+def change_password(old_password: str, new_password: str, current_user: User = Depends(get_current_active_user)):
+    user = authenticate_user(current_user.username, old_password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password"
+        )
+    current_user.password = get_password_hash(new_password)
+    users.update_one({'username': current_user.username}, {'$set': {'password': current_user.password}})
+    return User(**current_user.dict(by_alias=True))
