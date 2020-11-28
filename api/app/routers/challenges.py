@@ -1,5 +1,4 @@
 from fastapi import APIRouter, UploadFile, File
-from typing import List
 from . import *
 from datetime import datetime
 import os
@@ -9,7 +8,6 @@ import docker
 client = docker.from_env()
 router = APIRouter()
 db = mongo.secure_code_platform
-challenges = db.challenges
 upload_path = '/api/solutions/'
 challenges_categories = ['web', 'crypto', 'forensic', 'network', 'linux', 'reverse']
 challenges_difficult = ['easy', 'medium', 'hard', 'impossible']
@@ -39,6 +37,8 @@ class Challenge(BaseModel):
     difficulty_rating: int = None
     challenge_created: datetime = None
     challenge_modified: datetime = None
+    useful_resources: List[str]
+    requirements: List[str]
 
 
 class ContainerChallenge(Challenge):
@@ -95,6 +95,12 @@ def show_task(current_user: User = Depends(get_current_active_user)):
     return {'username': current_user.username, 'pwd': list(os.listdir('api/challenges/web/example'))}
 
 
+@router.get('/get_challenge')
+def get_challenge_name(challenge_id: str, current_user: User = Depends(get_current_active_user)):
+    challenge = Challenge(**challenges.find_one({'_id': ObjectId(challenge_id)}))
+    return challenge
+
+
 @router.post("/upload_solution/")
 async def upload_solution(challenge_id: str, current_user: User = Depends(get_current_active_user),
                           file: UploadFile = File(...)):
@@ -103,7 +109,7 @@ async def upload_solution(challenge_id: str, current_user: User = Depends(get_cu
     upload_file(filename, file)
     result, message = await check_container_solution(filename, challenge_id)
     write_result_to_user_stat(current_user, challenge_id, result)
-    return {'username': current_user.username, 'result': result, 'message': message}
+    return {'username': current_user.username, 'result': result, 'detail': message}
 
 
 def upload_file(filename, file):
