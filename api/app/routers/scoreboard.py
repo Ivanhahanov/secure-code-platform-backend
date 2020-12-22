@@ -34,9 +34,9 @@ def scoreboard_info(current_user: User = Depends(get_current_active_user)):
     all_challenges = get_challenges()
     place = [i for i, user in enumerate(all_users) if user.username == current_user.username]
     if place == list():
-        place = '#'
+        place = 0
     else:
-        place = f"#{place[0] + 1}"
+        place = place[0] + 1
     return {'username': current_user.username,
             'num_of_users': len(all_users),
             'num_of_challenges': len(all_challenges),
