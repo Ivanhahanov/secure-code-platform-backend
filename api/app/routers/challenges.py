@@ -37,8 +37,8 @@ class Challenge(BaseModel):
     difficulty_rating: int = None
     challenge_created: datetime = None
     challenge_modified: datetime = None
-    useful_resources: List[str]
-    requirements: List[str]
+    useful_resources: List[str] = []
+    requirements: List[str] = []
 
 
 class ContainerChallenge(Challenge):
