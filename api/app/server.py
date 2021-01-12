@@ -2,6 +2,7 @@ import logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from api.app.routers import challenges, scoreboard, auth, admin, user, sponsors, faq
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 
@@ -17,7 +18,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+app.mount("/static", StaticFiles(directory="api/static"), name="static")
 app.include_router(auth.router, prefix="/auth", tags=['Auth'])
 app.include_router(user.router, prefix="/users", tags=['Users'])
 app.include_router(challenges.router, prefix="/challenges", tags=['Challenges'])

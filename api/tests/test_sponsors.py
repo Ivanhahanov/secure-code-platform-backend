@@ -5,7 +5,7 @@ test_id = ""
 
 def test_add_sponsor():
     global test_id
-    token = get_token()
+    token = get_admin_token()
     headers = {"Authorization": "Bearer " + token}
     data = {
         "title": "string",
@@ -19,7 +19,7 @@ def test_add_sponsor():
 
 
 def test_update_sponsor():
-    token = get_token()
+    token = get_admin_token()
     headers = {"Authorization": "Bearer " + token}
     data = {
         "_id": test_id,
@@ -39,7 +39,7 @@ def test_list_sponsor():
 
 
 def test_delete_sponsor():
-    token = get_token()
+    token = get_admin_token()
     headers = {"Authorization": "Bearer " + token}
     data = {
         "_id": test_id
