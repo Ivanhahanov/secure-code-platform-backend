@@ -29,8 +29,9 @@ def list_sponsor(current_user: User = Depends(get_current_active_user)):
 @router.put('/add')
 def add_sponsor(sponsor: Sponsor, current_user: User = Depends(get_current_active_user)):
     _id = sponsors.insert_one(sponsor.dict(by_alias=True))
-    print(_id.inserted_id)
-    return {str(_id.inserted_id): sponsor}
+    sponsor = sponsor.dict(by_alias=True)
+    sponsor["_id"] = str(_id.inserted_id)
+    return sponsor
 
 
 @router.post('/update')

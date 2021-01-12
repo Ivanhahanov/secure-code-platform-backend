@@ -13,7 +13,7 @@ def test_add_sponsor():
         "img": "string"
     }
     response = client.put('/sponsors/add', headers=headers, json=data)
-    test_id = list(response.json())[0]
+    test_id = response.json()['_id']
     print(type(test_id))
     assert response.status_code == 200
 
