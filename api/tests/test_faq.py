@@ -5,7 +5,7 @@ test_id = ""
 
 def test_add_question():
     global test_id
-    token = get_token()
+    token = get_admin_token()
     headers = {"Authorization": "Bearer " + token}
     data = {
         "question": "3",
@@ -18,7 +18,7 @@ def test_add_question():
 
 
 def test_update_question():
-    token = get_token()
+    token = get_admin_token()
     headers = {"Authorization": "Bearer " + token}
     data = {
         "_id": test_id,
@@ -42,7 +42,7 @@ def test_list_question():
 
 
 def test_delete_question():
-    token = get_token()
+    token = get_admin_token()
     headers = {"Authorization": "Bearer " + token}
     data = {
         "_id": test_id

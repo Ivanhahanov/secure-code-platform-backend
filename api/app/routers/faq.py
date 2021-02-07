@@ -26,7 +26,7 @@ def list_questions(current_user: User = Depends(get_current_active_user)):
 
 
 @router.put('/add')
-def add_question(question: FAQ, current_user: User = Depends(get_current_active_user)):
+def add_question(question: FAQ, current_user: User = Depends(get_current_user_if_admin)):
     _id = questions.insert_one(question.dict(by_alias=True))
     question = question.dict(by_alias=True)
     question["_id"] = str(_id.inserted_id)
@@ -34,7 +34,7 @@ def add_question(question: FAQ, current_user: User = Depends(get_current_active_
 
 
 @router.post('/update')
-def update_faq(question: FAQ, current_user: User = Depends(get_current_active_user)):
+def update_faq(question: FAQ, current_user: User = Depends(get_current_user_if_admin)):
     _id = ObjectId(question.id)
     question = question.dict(by_alias=True)
     questions.update_one({"_id": _id}, {'$set': question})
@@ -42,6 +42,6 @@ def update_faq(question: FAQ, current_user: User = Depends(get_current_active_us
 
 
 @router.delete('/del')
-def del_faq(_id: Optional[str], current_user: User = Depends(get_current_active_user)):
+def del_faq(_id: Optional[str], current_user: User = Depends(get_current_user_if_admin)):
     questions.delete_one({"_id": ObjectId(_id)})
     return _id
