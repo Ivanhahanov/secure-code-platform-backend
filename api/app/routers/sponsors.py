@@ -33,7 +33,7 @@ def list_sponsor(current_user: User = Depends(get_current_active_user)):
 
 
 @router.put('/add')
-async def add_challenge_with_files(title: str,
+async def add_sponsor(title: str,
                                    description: str,
                                    sponsor_img: UploadFile = File(...),
                                    current_user: User = Depends(get_current_user_if_admin)):
@@ -43,6 +43,7 @@ async def add_challenge_with_files(title: str,
     _id = sponsors.insert_one(sponsor.dict(by_alias=True))
     sponsor = sponsor.dict(by_alias=True)
     sponsor["_id"] = str(_id.inserted_id)
+    print(sponsor)
     return sponsor
 
 
