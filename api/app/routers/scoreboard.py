@@ -28,6 +28,12 @@ def users_scoreboard(current_user: User = Depends(get_current_active_user)):
             'scoreboard': sorted(all_users, key=lambda user: (user.users_score, user.username), reverse=True)}
 
 
+@router.get('/num_of_users')
+def get_num_of_users():
+    num_of_users = users.count_documents({'user_role': {'$ne': 'admin'}})
+    return {'num_of_users': num_of_users}
+
+
 @router.get('/info')
 def scoreboard_info(current_user: User = Depends(get_current_active_user)):
     all_users = get_users_without_admin()

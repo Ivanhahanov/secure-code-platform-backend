@@ -24,3 +24,8 @@ def test_scoreboard_info():
     assert response.status_code == 200
     for field in fields:
         assert data.get(field) is not None
+
+def test_get_num_of_users():
+    response = client.get('/scoreboard/num_of_users')
+    data = response.json()
+    assert int(data['num_of_users']) > 0
