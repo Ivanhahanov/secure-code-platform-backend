@@ -34,9 +34,9 @@ def list_sponsor(current_user: User = Depends(get_current_active_user)):
 
 @router.put('/add')
 async def add_sponsor(title: str,
-                                   description: str,
-                                   sponsor_img: UploadFile = File(...),
-                                   current_user: User = Depends(get_current_user_if_admin)):
+                      description: str,
+                      sponsor_img: UploadFile = File(...),
+                      current_user: User = Depends(get_current_user_if_admin)):
     img = shuffle_name(sponsor_img.filename)
     upload_file(img, sponsor_img)
     sponsor = Sponsor(title=title, description=description, img=sponsors_img_path + img)
