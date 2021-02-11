@@ -6,9 +6,9 @@ router = APIRouter()
 
 class ScoreboardUsers(BaseModel):
     username: str
-    solved_challenges_id: Dict[str, datetime] = {}
     users_score: int = 0
     users_group: str = None
+    place: int = None
 
 
 class ScoreboardChallenges(BaseModel):
@@ -21,11 +21,14 @@ class ScoreboardChallenges(BaseModel):
     difficulty_rating: int = None
 
 
-@router.get('/users')
-def users_scoreboard(current_user: User = Depends(get_current_active_user)):
+@router.post('/users')
+def users_scoreboard(current_user: User = Depends(get_current_active_user), page_count: int = 1, row_count: int = 10):
     all_users = get_users_without_admin()
+    scoreboard = sorted(all_users, key=lambda user: (user.users_score, user.username), reverse=True)
+    for place, user in enumerate(scoreboard, 1):
+        user.place = place
     return {'username': current_user.username,
-            'scoreboard': sorted(all_users, key=lambda user: (user.users_score, user.username), reverse=True)}
+            'scoreboard': scoreboard[(page_count - 1) * row_count:page_count * row_count]}
 
 
 @router.get('/num_of_users')
@@ -46,7 +49,6 @@ def scoreboard_info(current_user: User = Depends(get_current_active_user)):
     return {'username': current_user.username,
             'num_of_users': len(all_users),
             'num_of_challenges': len(all_challenges),
-            'num_of_solved_challenges': get_solved_challenges(current_user),
             'users_score': get_users_score(current_user),
             'users_place': place}
 
@@ -59,11 +61,6 @@ def get_users_without_admin():
 def get_challenges():
     all_challenges = [ScoreboardChallenges(**challenge) for challenge in challenges.find()]
     return all_challenges
-
-
-def get_solved_challenges(user):
-    scoreboard_user = ScoreboardUsers(**users.find_one({'username': user.username}))
-    return len(scoreboard_user.solved_challenges_id)
 
 
 def get_users_score(user):
