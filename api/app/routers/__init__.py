@@ -44,6 +44,7 @@ class User(BaseModel):
     full_name: Optional[str] = None
     disabled: Optional[bool] = False
     user_role: str = 'user'
+    avatar_path: str = ''
 
 
 class UserInDB(User):
@@ -52,8 +53,11 @@ class UserInDB(User):
 
 class UserScriptKiddy(User):
     solved_challenges_id: Dict[str, datetime] = {}
+    num_of_solved_challenges: int
+    place_in_scoreboard: int
     users_score: int = 0
     users_group: str = None
+    avatar_path: str
 
 
 def get_user(username: str):
