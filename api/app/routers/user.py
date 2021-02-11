@@ -1,6 +1,7 @@
 from . import *
-from fastapi import Depends, APIRouter, HTTPException, status
+from fastapi import Depends, APIRouter, HTTPException, status, UploadFile, File
 from fastapi.security import OAuth2PasswordRequestForm
+from .scoreboard import get_users_without_admin
 
 db = mongo.secure_code_platform
 users = db.users
@@ -54,8 +55,25 @@ async def register_user(user: UserInDB):
 
 @router.get("/me")
 async def read_users_me(current_user: User = Depends(get_current_active_user)):
-    user = UserScriptKiddy(**users.find_one({"username": current_user.username}, {'_id': False}))
+    user = users.find_one({"username": current_user.username})
+    num_of_solved_challenges = len(user["solved_challenges_id"])
+    user = UserScriptKiddy(**users.find_one({"username": current_user.username}, {'_id': False}),
+                           num_of_solved_challenges=num_of_solved_challenges,
+                           place_in_scoreboard=1
+                           )
+    user.num_of_solved_challenges = len(user.solved_challenges_id)
+    user.place_in_scoreboard = get_place_in_scoreboard(current_user.username)
     return user
+
+
+def get_place_in_scoreboard(username):
+    all_users = get_users_without_admin()
+    sorted_users = sorted(all_users, key=lambda scoreboard_user: scoreboard_user.users_score)
+    for index, user in enumerate(sorted_users, start=1):
+        if user.username == username:
+            place_in_scoreboard = index
+            return place_in_scoreboard
+    return -1
 
 
 @router.post("/change_password")
@@ -69,3 +87,31 @@ def change_password(old_password: str, new_password: str, current_user: User = D
     current_user.password = get_password_hash(new_password)
     users.update_one({'username': current_user.username}, {'$set': {'password': current_user.password}})
     return User(**current_user.dict(by_alias=True))
+
+
+@router.put("/upload_avatar")
+def put_avatar(avatar_img: UploadFile = File(...),
+               current_user: User = Depends(get_current_active_user)):
+    avatar_path = upload_avatar(avatar_img, current_user.username)
+    users.update_one({'username': current_user.username},
+                     {'$set': {'avatar_path': avatar_path}})
+    return {'status': True}
+
+
+def upload_avatar(img, username):
+    extension = os.path.splitext(img.filename)[1].lower()
+    if extension not in ('.png', '.jpg', '.jpeg'):
+        HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Wrong extension {extension}"
+        )
+    mime_type = img.content_type
+    if mime_type not in ('image/png', 'image/jpeg'):
+        HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"Wrong Media type {extension}"
+        )
+    filename = f'api/static/img/avatar/{username}{extension}'
+    with open(filename, 'wb') as f:
+        [f.write(chunk) for chunk in iter(lambda: img.file.read(), b'')]
+    return filename
