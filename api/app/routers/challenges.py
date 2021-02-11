@@ -10,6 +10,7 @@ router = APIRouter()
 db = mongo.secure_code_platform
 upload_path = '/api/solutions/'
 challenges_categories = ['web', 'crypto', 'forensic', 'network', 'linux', 'reverse']
+challenges_tags = []
 challenges_difficult = ['easy', 'medium', 'hard', 'impossible']
 solution_path = os.getenv('PWD') + upload_path
 
@@ -28,7 +29,8 @@ class Challenge(BaseModel):
     input_example: str
     output_example: str
     score: int
-    category_tags: List[str]
+    tags: List[str] = []
+    category: str
     author: str = None
     first_blood: str = None
     solutions_num: int = 0
@@ -47,16 +49,38 @@ class ContainerChallenge(Challenge):
     flag: str
 
 
+class ShortChallenge(BaseModel):
+    title: str
+    score: int
+    tags: List[str]
+    category: str
+    author: str = None
+    difficulty_tag: str
+    challenge_created: datetime = None
+    solved: bool
+
+
 @router.post('/list')
-def get_challenges_list(current_user: User = Depends(get_current_active_user), tags: List[str] = None):
-    if tags:
-        challenges_list = challenges.find({'category_tags': {"$in": tags}}, {'_id': False})
-        return {"challenges": list(challenges_list)}
-    challenges_list = list(challenges.find({}, {'_id': False}))
-    return {'username': current_user.username, "challenges": challenges_list}
+def get_challenges_list(current_user: User = Depends(get_current_active_user)):
+    short_challenges = []
+    solved_challenges_id = users.find_one({'username': current_user.username})['solved_challenges_id']
+    for challenge in challenges.find({}):
+        if challenge['_id'] in set(map(ObjectId, solved_challenges_id)):
+            short_challenges.append(ShortChallenge(**challenge, solved=True))
+        else:
+            short_challenges.append(ShortChallenge(**challenge, solved=True))
+    return {'username': current_user.username, "challenges": short_challenges}
 
 
-@router.post('/category_list')
+@router.post('/my_solved_challenges')
+def my_solved_challenges(current_user: User = Depends(get_current_active_user)):
+    solved_challenges_id = users.find_one({'username': current_user.username})['solved_challenges_id']
+    solved_short_challenges = [ShortChallenge(**challenges.find_one({'_id': ObjectId(challenge_id)}), solved=True)
+                               for challenge_id in solved_challenges_id]
+    return solved_short_challenges
+
+
+@router.get('/category_list')
 def category_list(current_user: User = Depends(get_current_active_user)):
     return {'username': current_user.username, "category_list": challenges_categories}
 
@@ -162,7 +186,7 @@ def get_challenge_flag(challenge_id):
 
 
 def new_challenge_filter(challenge, user):
-    if set(challenge.category_tags).issuperset(set(challenges_categories)):
+    if set(challenge.category).issuperset(set(challenges_categories)):
         raise HTTPException(status_code=400, detail='Invalid Category')
     if challenge.difficulty_tag not in challenges_difficult:
         raise HTTPException(status_code=400, detail='Invalid Difficult Tag')
