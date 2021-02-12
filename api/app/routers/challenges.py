@@ -75,11 +75,12 @@ def get_challenges_list(current_user: User = Depends(get_current_active_user),
 
 
 @router.post('/my_solved_challenges')
-def my_solved_challenges(current_user: User = Depends(get_current_active_user)):
+def my_solved_challenges(current_user: User = Depends(get_current_active_user),
+                         page_number: int = 1, row_count: int = 10):
     solved_challenges_id = users.find_one({'username': current_user.username})['solved_challenges_id']
     solved_short_challenges = [ShortChallenge(**challenges.find_one({'_id': ObjectId(challenge_id)}), solved=True)
                                for challenge_id in solved_challenges_id]
-    return solved_short_challenges
+    return {"challenges": solved_short_challenges[(page_number - 1) * row_count:page_number * row_count]}
 
 
 @router.get('/category_list')
