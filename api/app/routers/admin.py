@@ -55,6 +55,46 @@ async def run_containers(challenge_id: str, current_user: User = Depends(get_cur
     return {'username': current_user.username, 'container_ip': container_ip}
 
 
+@router.get('/category/list')
+def add_category():
+    pass
+
+
+@router.put('/category/add')
+def add_category():
+    pass
+
+
+@router.post('/category/update')
+def add_category():
+    pass
+
+
+@router.delete('/category/delete')
+def add_category():
+    pass
+
+
+@router.get('/tags/list')
+def add_category():
+    pass
+
+
+@router.put('/tags/add')
+def add_category():
+    pass
+
+
+@router.post('/tags/update')
+def add_category():
+    pass
+
+
+@router.delete('/tags/delete')
+def add_category():
+    pass
+
+
 def generate_random_flag():
     symbols = string.digits + string.ascii_letters
     flag = ''.join(random.choice(symbols) for i in range(27))
