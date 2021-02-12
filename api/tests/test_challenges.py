@@ -19,7 +19,7 @@ def test_challenges_category_list():
         "linux",
         "reverse"
     ]
-    response = client.post('/challenges/category_list', headers=headers)
+    response = client.get('/challenges/category_list', headers=headers)
     assert response.status_code == 200
-    assert response.json()['username'] == 'user'
     assert response.json()['category_list'] == category_list
+

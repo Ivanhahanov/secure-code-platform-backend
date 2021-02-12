@@ -23,5 +23,4 @@ def test_admin_users():
     response = client.get("/admin/users", headers=headers)
     data = response.json()
     assert response.status_code == 200
-    assert data['username'] == 'admin'
     assert type(data['users']) is list
