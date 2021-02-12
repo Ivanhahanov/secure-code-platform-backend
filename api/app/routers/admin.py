@@ -12,6 +12,14 @@ db = mongo.secure_code_platform
 challenges = db.challenges
 
 
+class AdminPanelUser(BaseModel):
+    username: str
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    disabled: Optional[bool] = False
+    user_role: str = 'user'
+
+
 @router.get('/containers_list')
 def container_list(current_user: User = Depends(get_current_user_if_admin)):
     return {'user': current_user.username, 'role': current_user.user_role,
@@ -19,19 +27,19 @@ def container_list(current_user: User = Depends(get_current_user_if_admin)):
 
 
 @router.get('/users')
-def users_list(current_user: User = Depends(get_current_user_if_admin)):
-    return {'username': current_user.username, 'users': list(db.users.find({}, {'_id': False}))}
+def users_list(_: User = Depends(get_current_user_if_admin)):
+    return {'users': [AdminPanelUser(**user) for user in db.users.find()]}
 
 
 @router.get('/change_user_role')
-def change_user_role(username: str, role: str, current_user: User = Depends(get_current_user_if_admin)):
+def change_user_role(username: str, role: str, _: User = Depends(get_current_user_if_admin)):
     if role not in roles:
         raise HTTPException(status_code=400, detail="invalid Role")
     user = users.find_one_and_update({'username': username}, {'$set': {'user_role': role}}, {'_id': False})
     # TODO: get updated user
     if user is None:
         raise HTTPException(status_code=400, detail="invalid User")
-    return {'username': current_user.username, 'changed': dict(user)}
+    return {'changed': dict(user)}
 
 
 @router.post('/run_web_checkers_containers')
