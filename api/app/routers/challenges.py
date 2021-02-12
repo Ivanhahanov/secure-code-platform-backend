@@ -61,7 +61,8 @@ class ShortChallenge(BaseModel):
 
 
 @router.post('/list')
-def get_challenges_list(current_user: User = Depends(get_current_active_user)):
+def get_challenges_list(current_user: User = Depends(get_current_active_user),
+                        page_number: int = 1, row_count: int = 10):
     short_challenges = []
     solved_challenges_id = users.find_one({'username': current_user.username})['solved_challenges_id']
     for challenge in challenges.find({}):
@@ -69,7 +70,8 @@ def get_challenges_list(current_user: User = Depends(get_current_active_user)):
             short_challenges.append(ShortChallenge(**challenge, solved=True))
         else:
             short_challenges.append(ShortChallenge(**challenge, solved=True))
-    return {'username': current_user.username, "challenges": short_challenges}
+    return {'username': current_user.username,
+            "challenges": short_challenges[(page_number - 1) * row_count:page_number * row_count]}
 
 
 @router.post('/my_solved_challenges')

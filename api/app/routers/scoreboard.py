@@ -22,13 +22,13 @@ class ScoreboardChallenges(BaseModel):
 
 
 @router.post('/users')
-def users_scoreboard(current_user: User = Depends(get_current_active_user), page_count: int = 1, row_count: int = 10):
+def users_scoreboard(current_user: User = Depends(get_current_active_user), page_number: int = 1, row_count: int = 10):
     all_users = get_users_without_admin()
     scoreboard = sorted(all_users, key=lambda user: (user.users_score, user.username), reverse=True)
     for place, user in enumerate(scoreboard, 1):
         user.place = place
     return {'username': current_user.username,
-            'scoreboard': scoreboard[(page_count - 1) * row_count:page_count * row_count]}
+            'scoreboard': scoreboard[(page_number - 1) * row_count:page_number * row_count]}
 
 
 @router.get('/num_of_users')
