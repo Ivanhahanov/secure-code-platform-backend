@@ -27,8 +27,7 @@ def users_scoreboard(current_user: User = Depends(get_current_active_user), page
     scoreboard = sorted(all_users, key=lambda user: (user.users_score, user.username), reverse=True)
     for place, user in enumerate(scoreboard, 1):
         user.place = place
-    return {'username': current_user.username,
-            'scoreboard': scoreboard[(page_number - 1) * row_count:page_number * row_count]}
+    return {'scoreboard': scoreboard[(page_number - 1) * row_count:page_number * row_count]}
 
 
 @router.get('/num_of_users')

@@ -70,8 +70,7 @@ def get_challenges_list(current_user: User = Depends(get_current_active_user),
             short_challenges.append(ShortChallenge(**challenge, solved=True))
         else:
             short_challenges.append(ShortChallenge(**challenge, solved=True))
-    return {'username': current_user.username,
-            "challenges": short_challenges[(page_number - 1) * row_count:page_number * row_count]}
+    return {"challenges": short_challenges[(page_number - 1) * row_count:page_number * row_count]}
 
 
 @router.post('/my_solved_challenges')
@@ -84,8 +83,8 @@ def my_solved_challenges(current_user: User = Depends(get_current_active_user),
 
 
 @router.get('/category_list')
-def category_list(current_user: User = Depends(get_current_active_user)):
-    return {'username': current_user.username, "category_list": challenges_categories}
+def category_list(_: User = Depends(get_current_active_user)):
+    return {"category_list": challenges_categories}
 
 
 @router.put('/add_container_challenge')
@@ -107,12 +106,11 @@ async def add_web_challenge(challenge: Challenge, current_user: User = Depends(g
 async def add_challenge_with_files(challenge_name: str,
                                    public_file: UploadFile = File(...),
                                    checkers_file: UploadFile = File(...),
-                                   current_user: User = Depends(get_current_user_if_editor)):
+                                   _: User = Depends(get_current_user_if_editor)):
     all_challenges_name = [challenge['title'] for challenge in challenges.find({}, {'_id': False})]
     if challenge_name not in all_challenges_name:
         raise HTTPException(status_code=400, detail='Invalid challenge name')
-    return {'username': current_user.username,
-            'challenge_name': challenge_name,
+    return {'challenge_name': challenge_name,
             'public_filename': public_file.filename,
             'checkers_file': checkers_file.filename}
 
@@ -123,7 +121,7 @@ def show_task(current_user: User = Depends(get_current_active_user)):
 
 
 @router.get('/get_challenge')
-def get_challenge_name(challenge_id: str, current_user: User = Depends(get_current_active_user)):
+def get_challenge_name(challenge_id: str, _: User = Depends(get_current_active_user)):
     challenge = Challenge(**challenges.find_one({'_id': ObjectId(challenge_id)}))
     return challenge
 
