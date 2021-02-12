@@ -18,9 +18,13 @@ mongo = MongoClient(host='mongodb',
                     port=27017,
                     username=mongodb_user,
                     password=mongodb_pass)
+
 db = mongo.secure_code_platform
 users = db.users
 challenges = db.challenges
+categories = db.categories
+tags = db.tags
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/token")
 SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"
@@ -58,6 +62,15 @@ class UserScriptKiddy(User):
     users_score: int = 0
     users_group: str = None
     avatar_path: str
+
+
+class Tag(BaseModel):
+    tag_name: str
+    tag_class: str
+
+
+class Category(BaseModel):
+    category_name: str
 
 
 def get_user(username: str):

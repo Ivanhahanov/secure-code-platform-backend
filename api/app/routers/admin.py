@@ -57,42 +57,52 @@ async def run_containers(challenge_id: str, current_user: User = Depends(get_cur
 
 @router.get('/category/list')
 def add_category():
-    pass
+    return {'categories': [Category(**category) for category in categories.find()]}
 
 
 @router.put('/category/add')
-def add_category():
-    pass
-
-
-@router.post('/category/update')
-def add_category():
-    pass
+def add_category(category: Category):
+    try:
+        result = categories.insert_one(category.dict(by_alias=True)).acknowledged
+        return {"status": result, "category": category}
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=f'DataBase Error: {e}')
 
 
 @router.delete('/category/delete')
-def add_category():
-    pass
+def add_category(category_name: str):
+    try:
+        result = categories.delete_one({"category_name": category_name}).acknowledged
+        return {"status": result}
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=f'DataBase Error: {e}')
 
 
 @router.get('/tags/list')
 def add_category():
-    pass
+    return {'tags': [Tag(**tag) for tag in tags.find()]}
 
 
 @router.put('/tags/add')
-def add_category():
-    pass
-
-
-@router.post('/tags/update')
-def add_category():
-    pass
+def add_category(tag: Tag):
+    try:
+        result = tags.insert_one(tags.dict(by_alias=True)).acknowledged
+        return {"status": result, "category": tag}
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=f'DataBase Error: {e}')
 
 
 @router.delete('/tags/delete')
-def add_category():
-    pass
+def add_category(tag_name):
+    try:
+        result = tags.delete_one({"tag_name": tag_name}).acknolage
+        return {"status": result}
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail=f'DataBase Error: {e}')
 
 
 def generate_random_flag():
