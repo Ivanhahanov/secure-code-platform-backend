@@ -21,9 +21,8 @@ class AdminPanelUser(BaseModel):
 
 
 @router.get('/containers_list')
-def container_list(current_user: User = Depends(get_current_user_if_admin)):
-    return {'user': current_user.username, 'role': current_user.user_role,
-            'containers': [container.name for container in client.containers.list()]}
+def container_list(_: User = Depends(get_current_user_if_admin)):
+    return {'containers': [container.name for container in client.containers.list()]}
 
 
 @router.get('/users')
@@ -43,24 +42,24 @@ def change_user_role(username: str, role: str, _: User = Depends(get_current_use
 
 
 @router.post('/run_web_checkers_containers')
-def run_web_checkers_containers(challenge_id: str, current_user: User = Depends(get_current_user_if_admin)):
+def run_web_checkers_containers(challenge_id: str, _: User = Depends(get_current_user_if_admin)):
     challenge = get_challenge(challenge_id)
     r.set(challenge_id, generate_random_flag())
     container_ip = run_web_container_with_flag(docker_image_name=challenge.image_name,
                                                network='checkers-network',
                                                flag=r.get(challenge_id).decode())
-    return {'username': current_user.username, 'container_ip': container_ip}
+    return {'container_ip': container_ip}
 
 
 @router.post('/run_web_containers')
-async def run_containers(challenge_id: str, current_user: User = Depends(get_current_user_if_admin)):
+async def run_containers(challenge_id: str, _: User = Depends(get_current_user_if_admin)):
     challenge = get_challenge(challenge_id)
     container_ip = run_web_container_with_flag(docker_image_name=challenge.image_name,
                                                network=None,
                                                flag=challenge.flag,
                                                ports={'5000/tcp': ('0.0.0.0', 5000)},
                                                prod=True)
-    return {'username': current_user.username, 'container_ip': container_ip}
+    return {'container_ip': container_ip}
 
 
 @router.get('/category/list')
