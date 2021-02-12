@@ -95,8 +95,8 @@ def add_category():
 @router.put('/tags/add')
 def add_category(tag: Tag):
     try:
-        result = tags.insert_one(tags.dict(by_alias=True)).acknowledged
-        return {"status": result, "category": tag}
+        result = tags.insert_one(tag.dict(by_alias=True)).acknowledged
+        return {"status": result, "tag": tag}
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail=f'DataBase Error: {e}')
@@ -105,7 +105,7 @@ def add_category(tag: Tag):
 @router.delete('/tags/delete')
 def add_category(tag_name):
     try:
-        result = tags.delete_one({"tag_name": tag_name}).acknolage
+        result = tags.delete_one({"tag_name": tag_name}).acknowledged
         return {"status": result}
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
