@@ -1,0 +1,12 @@
+sql:
+  title: "SQL приключения"
+  text: "Здесь могла бы быть описание, но админ слишком ленив. Реши таск и сдай флаг"
+  score: 10
+  tags:
+    - sql
+  category: web,
+  difficulty_tag: easy,
+  port: 8080
+  flag: $1mple_$ql_1nj3ct10n
+  useful_resources:
+    - https://owasp.org/www-community/attacks/SQL_Injection
