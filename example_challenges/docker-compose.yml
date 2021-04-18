@@ -1,0 +1,7 @@
+version: "3.7"
+services:
+  sql:
+    build:
+      context: sql
+    ports:
+      - 8080:8080
