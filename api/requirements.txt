@@ -4,3 +4,4 @@ docker
 python-jose
 passlib
 aiofiles
+PyYAML
