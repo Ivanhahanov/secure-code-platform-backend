@@ -56,12 +56,11 @@ async def register_user(user: UserInDB):
 @router.get("/me")
 async def read_users_me(current_user: User = Depends(get_current_active_user)):
     user = users.find_one({"username": current_user.username})
-    num_of_solved_challenges = len(user["solved_challenges_id"])
+    num_of_solved_challenges = len(user.get("solved_challenges_id", []))
     user = UserScriptKiddy(**users.find_one({"username": current_user.username}, {'_id': False}),
                            num_of_solved_challenges=num_of_solved_challenges,
                            place_in_scoreboard=1
                            )
-    user.num_of_solved_challenges = len(user.solved_challenges_id)
     user.place_in_scoreboard = get_place_in_scoreboard(current_user.username)
     return user
 
