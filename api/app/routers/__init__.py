@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import Depends, HTTPException, status
 import os
 
@@ -44,11 +44,14 @@ class TokenData(BaseModel):
 
 class User(BaseModel):
     username: str
-    email: Optional[str] = None
-    full_name: Optional[str] = None
-    disabled: Optional[bool] = False
+    email: Optional[str]
+    full_name: Optional[str]
+    sex: Optional[int]
+    disabled: Optional[bool]
     user_role: str = 'user'
     avatar_path: str = ''
+    created_at: datetime = None
+    modified_at: datetime = None
 
 
 class UserInDB(User):

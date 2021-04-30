@@ -2,7 +2,7 @@ from . import *
 from fastapi import Depends, APIRouter, HTTPException, status, UploadFile, File
 from fastapi.security import OAuth2PasswordRequestForm
 from .scoreboard import get_users_without_admin
-
+from .extensions.avatar_generator import create_avatar
 db = mongo.secure_code_platform
 users = db.users
 router = APIRouter()
@@ -23,7 +23,6 @@ def authenticate_user(username: str, password: str):
     if not verify_password(password, user.password):
         return False
     return user
-
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
@@ -49,6 +48,8 @@ async def register_user(user: UserInDB):
     if user.user_role != "user":
         raise HTTPException(status_code=400, detail="Invalid Role")
     user.password = get_password_hash(user.password)
+    user.avatar_path = save_avatar(user)
+    user.created_at = datetime.now(timezone.utc).isoformat()
     users.insert(user.dict(by_alias=True))
     return {'user': user}
 
@@ -84,8 +85,15 @@ def change_password(old_password: str, new_password: str, current_user: User = D
             detail="Incorrect username or password"
         )
     current_user.password = get_password_hash(new_password)
+    current_user.modified_at = datetime.now(timezone.utc).isoformat()
     users.update_one({'username': current_user.username}, {'$set': {'password': current_user.password}})
     return User(**current_user.dict(by_alias=True))
+
+
+def save_avatar(current_user):
+    avatar_path = f'/api/static/img/avatar/{current_user.username}.svg'
+    create_avatar(avatar_path, current_user.sex)
+    return "/".join(avatar_path.split("/")[2:])
 
 
 @router.put("/upload_avatar")
