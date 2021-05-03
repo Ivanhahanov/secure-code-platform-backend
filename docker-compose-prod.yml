@@ -1,0 +1,56 @@
+version: "3.7"
+services:
+  api:
+    build:
+      context: api
+    ports:
+      - 80:80
+    volumes:
+      - type: bind
+        source: ${PWD}/api
+        target: /api
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+    environment:
+      - PWD=$PWD
+      - REDIS_PASS=$REDIS_PASS
+      - MONGODB_USER=$MONGODB_USER
+      - MONGODB_PASS=$MONGODB_PASS
+    networks:
+      server-network:
+      checkers-network:
+
+
+  mongodb:
+    image: mongo:4.4.1
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: $MONGODB_USER
+      MONGO_INITDB_ROOT_PASSWORD: $MONGODB_PASS
+    volumes:
+      - $PWD/data:/data/db
+    networks:
+      server-network:
+
+  redis:
+    image: "redis:alpine"
+    command: redis-server --requirepass sOmE_sEcUrE_pAsS
+    ports:
+      - "6379:6379"
+    volumes:
+      - $PWD/redis-data:/var/lib/redis
+      - $PWD/redis.conf:/usr/local/etc/redis/redis.conf
+
+    environment:
+      - REDIS_REPLICATION_MODE=master
+    networks:
+      checkers-network:
+
+networks:
+  server-network:
+    external: false
+    name: server-network
+
+  checkers-network:
+    external: false
+    name: checkers-network
