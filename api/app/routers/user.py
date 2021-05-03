@@ -1,11 +1,19 @@
+import datetime
+
 from . import *
 from fastapi import Depends, APIRouter, HTTPException, status, UploadFile, File
 from fastapi.security import OAuth2PasswordRequestForm
 from .scoreboard import get_users_without_admin
 from .extensions.avatar_generator import create_avatar
+
 db = mongo.secure_code_platform
 users = db.users
 router = APIRouter()
+
+
+class ChangePassword(BaseModel):
+    old_password: str
+    new_password: str
 
 
 def get_password_hash(password):
@@ -23,6 +31,7 @@ def authenticate_user(username: str, password: str):
     if not verify_password(password, user.password):
         return False
     return user
+
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
@@ -50,6 +59,7 @@ async def register_user(user: UserInDB):
     user.password = get_password_hash(user.password)
     user.avatar_path = save_avatar(user)
     user.created_at = datetime.now(timezone.utc).isoformat()
+    user.modified_at = user.created_at
     users.insert(user.dict(by_alias=True))
     return {'user': user}
 
@@ -77,17 +87,29 @@ def get_place_in_scoreboard(username):
 
 
 @router.post("/change_password")
-def change_password(old_password: str, new_password: str, current_user: User = Depends(get_current_active_user)):
-    user = authenticate_user(current_user.username, old_password)
+def change_password(passwords: ChangePassword, current_user: User = Depends(get_current_active_user)):
+    user = authenticate_user(current_user.username, passwords.old_password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password"
         )
-    current_user.password = get_password_hash(new_password)
+    current_user.password = get_password_hash(passwords.new_password)
     current_user.modified_at = datetime.now(timezone.utc).isoformat()
     users.update_one({'username': current_user.username}, {'$set': {'password': current_user.password}})
     return User(**current_user.dict(by_alias=True))
+
+
+@router.get("/change_avatar")
+async def change_avatar(current_user: User = Depends(get_current_active_user)):
+    user = User(**users.find_one({"username": current_user.username}))
+    time_delta = datetime.now(timezone.utc) - user.modified_at
+    if time_delta.days >= 0:
+        save_avatar(current_user)
+        user.modified_at = datetime.now(timezone.utc).isoformat()
+        return {"result": True, "message": "Avatar changed successfully"}
+    time_left = timedelta(days=10) - time_delta
+    return {"result": False, "message": f"Time left: {time_left}"}
 
 
 def save_avatar(current_user):
