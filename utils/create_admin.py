@@ -49,7 +49,7 @@ def create_test_users():
 
 def remove_test_users():
     db.users.delete_one({"username": user["username"]})
-    db.users.delete_one({"username": user["username"]})
+    db.users.delete_one({"username": admin["username"]})
 
 
 if len(sys.argv) == 2:

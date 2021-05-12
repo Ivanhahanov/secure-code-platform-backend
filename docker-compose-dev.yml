@@ -20,6 +20,19 @@ services:
     networks:
       server-network:
 
+  remove_users:
+    build:
+      context: utils
+    environment:
+      - MONGODB_USER=$MONGODB_USER
+      - MONGODB_PASS=$MONGODB_PASS
+    command: python3 create_admin.py remove
+    depends_on:
+      - mongodb
+      - api
+    networks:
+      server-network:
+
   create_users:
     build:
       context: utils
@@ -30,9 +43,9 @@ services:
     depends_on:
       - mongodb
       - api
+      - remove_users
     networks:
       server-network:
-
 
   mongodb:
     image: mongo:4.4.1

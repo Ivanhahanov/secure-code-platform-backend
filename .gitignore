@@ -6,3 +6,5 @@ __pycache__/
 .idea
 redis.conf
 redis-data
+api/static/img/avatar/**
+!api/static/img/avatar/.gitkeep

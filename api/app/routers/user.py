@@ -61,7 +61,7 @@ async def register_user(user: UserInDB):
     user.created_at = datetime.now(timezone.utc).isoformat()
     user.modified_at = user.created_at
     users.insert(user.dict(by_alias=True))
-    return {'user': user}
+    return {'user': User(**user.dict())}
 
 
 @router.get("/me")
