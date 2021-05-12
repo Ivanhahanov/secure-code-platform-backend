@@ -7,12 +7,12 @@ challenges = db.challenges
 
 
 class Flag(BaseModel):
+    shortname: str
     flag: str
-    title: str
 
 
 class Challenge(BaseModel):
-    title: str = None
+    shortname: str = None
     flag: str = None
     score: int = None
 
@@ -28,7 +28,7 @@ class SubmittedUser(BaseModel):
 @router.post('/submit_flag')
 def submit_flag(flag: Flag, current_user: User = Depends(get_current_active_user)):
     if check_flag(**flag.dict()):
-        add_score(current_user.username, flag.title)
+        add_score(current_user.username, flag.shortname)
         return {"flag": True}
     return {"flag": False}
 
