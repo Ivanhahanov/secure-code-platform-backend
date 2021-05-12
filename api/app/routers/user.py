@@ -46,7 +46,11 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     access_token = create_access_token(
         data={"sub": auth_user.username}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    access_token_expiration_time = datetime.now(timezone.utc).astimezone() + access_token_expires
+    return {"access_token": access_token,
+            "token_type": "bearer",
+            "expiration_time": access_token_expiration_time.astimezone()
+            }
 
 
 @router.put("/register")

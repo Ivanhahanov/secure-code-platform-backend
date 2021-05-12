@@ -36,6 +36,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 class Token(BaseModel):
     access_token: str
     token_type: str
+    expiration_time: datetime
 
 
 class TokenData(BaseModel):
