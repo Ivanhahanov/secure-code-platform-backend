@@ -12,7 +12,7 @@ class ScoreboardUser(BaseModel):
     place_in_scoreboard: int
 
 
-@router.post('/')
+@router.post('')
 def scoreboard_info(_: User = Depends(get_current_active_user), page_number: int = 1, row_count: int = 10):
     sorted_users = get_sorted_users(page_number - 1, row_count)
     num_of_users = get_users_count()
