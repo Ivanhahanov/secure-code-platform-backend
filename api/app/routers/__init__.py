@@ -51,21 +51,15 @@ class User(BaseModel):
     disabled: Optional[bool]
     user_role: str = 'user'
     avatar_path: str = ''
-    created_at: datetime = None
-    modified_at: datetime = None
+    created_at: str = ''
+    modified_at: str = ''
 
 
 class UserInDB(User):
     password: str
 
 
-class UserScriptKiddy(User):
-    solved_challenges_id: Dict[str, datetime] = {}
-    num_of_solved_challenges: int
-    place_in_scoreboard: int
-    users_score: int = 0
-    users_group: str = None
-    avatar_path: str
+
 
 
 class Tag(BaseModel):

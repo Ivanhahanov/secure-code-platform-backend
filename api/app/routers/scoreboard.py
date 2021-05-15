@@ -4,64 +4,59 @@ from . import *
 router = APIRouter()
 
 
-class ScoreboardUsers(BaseModel):
+class ScoreboardUser(BaseModel):
     username: str
-    users_score: int = 0
+    users_score: int
     users_group: str = None
-    place: int = None
+    num_of_solved_challenges: int
+    place_in_scoreboard: int
 
 
-class ScoreboardChallenges(BaseModel):
-    title: str
-    score: int
-    category_tags: List[str]
-    author: str = None
-    first_blood: str = None
-    difficulty_tag: str
-    difficulty_rating: int = None
+@router.post('/')
+def scoreboard_info(_: User = Depends(get_current_active_user), page_number: int = 1, row_count: int = 10):
+    sorted_users = get_sorted_users(page_number - 1, row_count)
+    num_of_users = get_users_count()
+    num_of_challenges = get_challenges_count()
+    return {'num_of_users': num_of_users,
+            'num_of_challenges': num_of_challenges,
+            'scoreboard': sorted_users}
 
 
-@router.post('/users')
-def users_scoreboard(_: User = Depends(get_current_active_user), page_number: int = 1, row_count: int = 10):
-    all_users = get_users_without_admin()
-    scoreboard = sorted(all_users, key=lambda user: (user.users_score, user.username), reverse=True)
-    for place, user in enumerate(scoreboard, 1):
-        user.place = place
-    return {'scoreboard': scoreboard[(page_number - 1) * row_count:page_number * row_count]}
+def get_sorted_users(page_count, row_count):
+    users_list = list()
+    skip = page_count * row_count
+    limit = row_count
+    users_slice = users.find({'user_role': {'$ne': 'admin'}}).sort(
+        "users_score", 1
+    ).skip(skip).limit(limit)
+    for place, user in enumerate(users_slice, 1):
+        user_info = ScoreboardUser(**user,
+                                   num_of_solved_challenges=len(user.get("solved_challenges", [])),
+                                   place_in_scoreboard=place + skip)
+        users_list.append(user_info)
+    return users_list
 
 
-@router.get('/num_of_users')
-def get_num_of_users():
-    num_of_users = users.count_documents({'user_role': {'$ne': 'admin'}})
-    return {'num_of_users': num_of_users}
+def get_users_count():
+    users_count = users.find({'user_role': {'$ne': 'admin'}}).count()
+    return users_count
 
 
-@router.get('/info')
-def scoreboard_info(current_user: User = Depends(get_current_active_user)):
-    all_users = get_users_without_admin()
-    all_challenges = get_challenges()
-    place = [i for i, user in enumerate(all_users) if user.username == current_user.username]
-    if place == list():
-        place = 0
-    else:
-        place = place[0] + 1
-    return {'username': current_user.username,
-            'num_of_users': len(all_users),
-            'num_of_challenges': len(all_challenges),
-            'users_score': get_users_score(current_user),
-            'users_place': place}
+def get_challenges_count():
+    challenges_count = challenges.find().count()
+    return challenges_count
 
 
-def get_users_without_admin():
-    all_users = [ScoreboardUsers(**user) for user in users.find({'user_role': {'$ne': 'admin'}})]
-    return all_users
+def get_solved_challenges_count(username):
+    return len(users.find_one({'username': username})['solved_challenges'])
 
 
-def get_challenges():
-    all_challenges = [ScoreboardChallenges(**challenge) for challenge in challenges.find()]
-    return all_challenges
+def get_users_place(username):
+    return users.find({"username": {"$lt": username, '$ne': 'admin'}}).sort(
+        "users_score", 1
+    ).count() + 1
 
 
-def get_users_score(user):
-    scoreboard_user = ScoreboardUsers(**users.find_one({'username': user.username}))
+def get_users_score(username):
+    scoreboard_user = ScoreboardUser(**users.find_one({'username': username}))
     return scoreboard_user.users_score

@@ -1,14 +1,17 @@
 import datetime
-
 from . import *
 from fastapi import Depends, APIRouter, HTTPException, status, UploadFile, File
 from fastapi.security import OAuth2PasswordRequestForm
-from .scoreboard import get_users_without_admin
+from .scoreboard import get_users_place, ScoreboardUser
 from .extensions.avatar_generator import create_avatar
 
 db = mongo.secure_code_platform
 users = db.users
 router = APIRouter()
+
+
+class UsersInfo(User, ScoreboardUser):
+    avatar_path: str
 
 
 class ChangePassword(BaseModel):
@@ -71,23 +74,10 @@ async def register_user(user: UserInDB):
 @router.get("/me")
 async def read_users_me(current_user: User = Depends(get_current_active_user)):
     user = users.find_one({"username": current_user.username})
-    num_of_solved_challenges = len(user.get("solved_challenges_id", []))
-    user = UserScriptKiddy(**users.find_one({"username": current_user.username}, {'_id': False}),
-                           num_of_solved_challenges=num_of_solved_challenges,
-                           place_in_scoreboard=1
-                           )
-    user.place_in_scoreboard = get_place_in_scoreboard(current_user.username)
+    user = UsersInfo(**users.find_one({"username": current_user.username}),
+                     num_of_solved_challenges=len(user.get("solved_challenges", [])),
+                     place_in_scoreboard=get_users_place(current_user.username))
     return user
-
-
-def get_place_in_scoreboard(username):
-    all_users = get_users_without_admin()
-    sorted_users = sorted(all_users, key=lambda scoreboard_user: scoreboard_user.users_score)
-    for index, user in enumerate(sorted_users, start=1):
-        if user.username == username:
-            place_in_scoreboard = index
-            return place_in_scoreboard
-    return -1
 
 
 @router.post("/change_password")
