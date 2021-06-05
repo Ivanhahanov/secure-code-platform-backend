@@ -6,3 +6,4 @@ passlib
 aiofiles
 PyYAML
 py-avataaars
+markdown==3.3.4

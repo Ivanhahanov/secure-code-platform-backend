@@ -59,9 +59,6 @@ class UserInDB(User):
     password: str
 
 
-
-
-
 class Tag(BaseModel):
     tag_name: str
     tag_class: str

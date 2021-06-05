@@ -3,11 +3,10 @@ from . import *
 from datetime import datetime
 import os
 import stat
-import docker
 import tarfile
 import yaml
-
-client = docker.from_env()
+#
+# client = docker.from_env()
 router = APIRouter()
 db = mongo.secure_code_platform
 challenges = db.challenges
@@ -16,7 +15,7 @@ upload_challenges_folder = '/api/challenges'
 challenges_categories = ['web', 'crypto', 'forensic', 'network', 'linux', 'reverse']
 challenges_tags = []
 challenges_difficult = ['easy', 'medium', 'hard', 'impossible']
-solution_path = os.getenv('PWD') + upload_path
+# solution_path = os.getenv('PWD') + upload_path
 
 
 class WriteUp(BaseModel):
@@ -54,6 +53,7 @@ class ContainerChallenge(Challenge):
 
 class ShortChallenge(BaseModel):
     title: str
+    shortname: str
     score: int
     tags: List[str]
     category: str
@@ -130,8 +130,10 @@ async def add_challenge(current_user: User = Depends(get_current_user_if_editor)
 
 
 @router.get('/get_challenge')
-def get_challenges(shortname: str, _: User = Depends(get_current_active_user)):
+def get_challenges(shortname: str, _: User = Depends(get_current_active_user), text_format='html'):
     challenge = Challenge(**challenges.find_one({'shortname': shortname}))
+    if text_format == 'html':
+        challenge.text = markdown_to_html(challenge.text)
     return challenge
 
 
@@ -196,43 +198,47 @@ def upload_file(filename, file):
     return True
 
 
-async def check_container_solution(filename, challenge_id):
-    script = f'/solutions/{filename}'
-    os.chmod(upload_path + filename, stat.S_IEXEC)
-    challenge = ContainerChallenge(**challenges.find_one({'_id': ObjectId(challenge_id)}, {'_id': False}))
-    server = client.containers.get('test_' + challenge.image_name.split('/')[-1])
-    server_ip = server.attrs['NetworkSettings']['Networks']['checkers-network']['IPAddress']
-    try:
-        container = client.containers.run(image=challenge.checker_image_name,
-                                          auto_remove=True,
-                                          volumes={solution_path: {'bind': '/solutions'}},
-                                          detach=False,
-                                          network='checkers-network',
-                                          command=[script, f'http://{server_ip}:5000']
-                                          )
-    except docker.errors.ContainerError:
-        return False, 'Error in Container'
-    except docker.errors.ImageNotFound:
-        return False, 'Image Not Found'
-    except docker.errors.APIError:
-        return False, 'docker server return error'
-    finally:
-        os.remove(upload_path + filename)
+# async def check_container_solution(filename, challenge_id):
+#     script = f'/solutions/{filename}'
+#     os.chmod(upload_path + filename, stat.S_IEXEC)
+#     challenge = ContainerChallenge(**challenges.find_one({'_id': ObjectId(challenge_id)}, {'_id': False}))
+#     server = client.containers.get('test_' + challenge.image_name.split('/')[-1])
+#     server_ip = server.attrs['NetworkSettings']['Networks']['checkers-network']['IPAddress']
+#     try:
+#         container = client.containers.run(image=challenge.checker_image_name,
+#                                           auto_remove=True,
+#                                           volumes={solution_path: {'bind': '/solutions'}},
+#                                           detach=False,
+#                                           network='checkers-network',
+#                                           command=[script, f'http://{server_ip}:5000']
+#                                           )
+#     except docker.errors.ContainerError:
+#         return False, 'Error in Container'
+#     except docker.errors.ImageNotFound:
+#         return False, 'Image Not Found'
+#     except docker.errors.APIError:
+#         return False, 'docker server return error'
+#     finally:
+#         os.remove(upload_path + filename)
+#
+#     message = container.decode().strip()
+#     if get_challenge_flag(challenge_id) == message:
+#         return True, 'Task Solved'
+#     return False, 'Invalid Output'
+#
+#
+# def write_result_to_user_stat(current_user, challenge_id, result):
+#     user = UserScriptKiddy(**users.find_one({"username": current_user.username}, {'_id': False}))
+#     challenge = ContainerChallenge(**challenges.find_one({"_id": ObjectId(challenge_id)}, {'_id': False}))
+#     if result:
+#         if not user.solved_challenges_id.get(challenge_id, None):
+#             user.solved_challenges_id[challenge_id] = datetime.now()
+#             user.users_score += challenge.score
+#             users.update_one({'username': current_user.username}, {'$set': user.dict(by_alias=True)})
 
-    message = container.decode().strip()
-    if get_challenge_flag(challenge_id) == message:
-        return True, 'Task Solved'
-    return False, 'Invalid Output'
-
-
-def write_result_to_user_stat(current_user, challenge_id, result):
-    user = UserScriptKiddy(**users.find_one({"username": current_user.username}, {'_id': False}))
-    challenge = ContainerChallenge(**challenges.find_one({"_id": ObjectId(challenge_id)}, {'_id': False}))
-    if result:
-        if not user.solved_challenges_id.get(challenge_id, None):
-            user.solved_challenges_id[challenge_id] = datetime.now()
-            user.users_score += challenge.score
-            users.update_one({'username': current_user.username}, {'$set': user.dict(by_alias=True)})
+def markdown_to_html(data):
+    import markdown
+    return markdown.markdown(data)
 
 
 def get_challenge_flag(challenge_id):
