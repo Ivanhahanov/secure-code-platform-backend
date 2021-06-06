@@ -5,6 +5,7 @@ import os
 import stat
 import tarfile
 import yaml
+
 #
 # client = docker.from_env()
 router = APIRouter()
@@ -15,6 +16,8 @@ upload_challenges_folder = '/api/challenges'
 challenges_categories = ['web', 'crypto', 'forensic', 'network', 'linux', 'reverse']
 challenges_tags = []
 challenges_difficult = ['easy', 'medium', 'hard', 'impossible']
+
+
 # solution_path = os.getenv('PWD') + upload_path
 
 
@@ -63,18 +66,42 @@ class ShortChallenge(BaseModel):
     solved: bool
 
 
-@router.get('/list')
+@router.post('/list')
 def get_challenges_list(current_user: User = Depends(get_current_active_user),
-                        page_number: int = 1, row_count: int = 10):
-    short_challenges = []
+                        difficult: Optional[list] = None, tags: Optional[list] = None,
+                        category: Optional[str] = None,
+                        page_count: int = 1, row_count: int = 10):
+    skip = (page_count - 1) * row_count
+    limit = row_count
+
+    # load users solved challenges
     solved_challenges_id = users.find_one({'username': current_user.username}).get('solved_challenges_id')
-    for challenge in challenges.find({}):
+    fields = {
+        "difficulty_tag": difficult,
+        "tags": tags,
+        "category": category
+    }
+    # remove None fields
+    fields = [
+        {k: v}
+        for k, v in fields.items()
+        if v is not None
+    ]
+    # search by fields, sort by score and skip by pagecount
+    challenges_slice = challenges.find(
+        {"$and": fields}
+    ).sort(
+        "score", 1
+    ).skip(skip).limit(limit)
+
+    short_challenges = []
+    for challenge in challenges_slice:
         if solved_challenges_id is not None:
             if challenge['_id'] in set(map(ObjectId, solved_challenges_id)):
                 short_challenges.append(ShortChallenge(**challenge, solved=True))
         else:
             short_challenges.append(ShortChallenge(**challenge, solved=False))
-    return {"challenges": short_challenges[(page_number - 1) * row_count:page_number * row_count]}
+    return {"challenges": short_challenges}
 
 
 @router.get('/my_solved_challenges')
