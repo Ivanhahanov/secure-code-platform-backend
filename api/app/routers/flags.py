@@ -5,6 +5,8 @@ from pydantic import BaseModel
 router = APIRouter()
 challenges = db.challenges
 
+flag_format = 'flag'
+
 
 class Flag(BaseModel):
     shortname: str
@@ -34,7 +36,7 @@ def submit_flag(flag: Flag, current_user: User = Depends(get_current_active_user
 def check_flag(flag, shortname):
     challenge = get_challenge(shortname)
     if challenge:
-        if challenge.flag == flag:
+        if "%s{%s}" % (flag_format, challenge.flag) == flag:
             return True
 
 
