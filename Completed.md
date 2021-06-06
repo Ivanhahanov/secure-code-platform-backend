@@ -3,6 +3,11 @@
 - [x] Change Password `/users/change_password`
 - [x] Profile `/users/me` *changed
 
+Challenges:
+- [x] /challenges/list
+- [x] /challenges/my_solved_challenges
+- [x] /challenges/get_challenge
+
 Scoreboard:
 - [x] /scoreboard/
 
