@@ -10,15 +10,12 @@ services:
         source: ${PWD}/api
         target: /api
       - type: bind
-        source: /var/run/docker.sock
-        target: /var/run/docker.sock
+        source: ${PWD}/docker-vpn/openvpn
+        target: /etc/openvpn
     environment:
-      - PWD=$PWD
       - REDIS_PASS=$REDIS_PASS
       - MONGODB_USER=$MONGODB_USER
       - MONGODB_PASS=$MONGODB_PASS
-    networks:
-      server-network:
 
   remove_users:
     build:
@@ -30,8 +27,6 @@ services:
     depends_on:
       - mongodb
       - api
-    networks:
-      server-network:
 
   create_users:
     build:
@@ -44,8 +39,6 @@ services:
       - mongodb
       - api
       - remove_users
-    networks:
-      server-network:
 
   mongodb:
     image: mongo:4.4.1
@@ -53,11 +46,48 @@ services:
       MONGO_INITDB_ROOT_USERNAME: $MONGODB_USER
       MONGO_INITDB_ROOT_PASSWORD: $MONGODB_PASS
     volumes:
-      - $PWD/data:/data/db
-    networks:
-      server-network:
+      - ./data:/data/db
+
+  openvpn:
+    build:
+      context: ovpn-admin
+      dockerfile: Dockerfile.openvpn
+    image: openvpn:local
+    command: /etc/openvpn/setup/configure.sh
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 7777:1194 # for openvpn
+      - 8080:8080 # for ovpn-admin because of network_mode
+    volumes:
+      - ./easyrsa_master:/etc/openvpn/easyrsa
+      - ./ccd_master:/etc/openvpn/ccd
+
+  ovpn-admin:
+    build:
+      context: ovpn-admin
+    image: ovpn-admin:local
+    command: /app/ovpn-admin --debug --ovpn.network="172.16.100.0/22" --master.sync-token="TOKEN" --easyrsa.path="/mnt/easyrsa" --easyrsa.index-path="/mnt/easyrsa/pki/index.txt" --ovpn.server="127.0.0.1:7777:tcp"
+    network_mode: service:openvpn
+    volumes:
+      - ./easyrsa_master:/mnt/easyrsa
+      - ./ccd_master:/mnt/ccd
+
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yaml
+    ports:
+      - 3000:3000
 
 networks:
-  server-network:
-    external: false
-    name: server-network
+  vpn-network:
