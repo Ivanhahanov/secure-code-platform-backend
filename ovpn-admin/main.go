@@ -784,7 +784,7 @@ func (oAdmin *OvpnAdmin) userCreate(username, password string) (bool, string) {
     ucErr := fmt.Sprintf("User \"%s\" created", username)
 
 	if checkUserExist(username) {
-		ucErr = fmt.Sprintf("User \"%s\" already exists\n", username)
+		ucErr = fmt.Sprintf("User '%s' already exists", username)
 		if *debug {
 			log.Printf("ERROR: userCreate: %s", ucErr)
 		}
