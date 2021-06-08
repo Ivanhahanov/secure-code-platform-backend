@@ -16,6 +16,8 @@ services:
       - REDIS_PASS=$REDIS_PASS
       - MONGODB_USER=$MONGODB_USER
       - MONGODB_PASS=$MONGODB_PASS
+    networks:
+      main-network:
 
   remove_users:
     build:
@@ -27,6 +29,8 @@ services:
     depends_on:
       - mongodb
       - api
+    networks:
+      main-network:
 
   create_users:
     build:
@@ -39,6 +43,8 @@ services:
       - mongodb
       - api
       - remove_users
+    networks:
+      main-network:
 
   mongodb:
     image: mongo:4.4.1
@@ -47,6 +53,8 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: $MONGODB_PASS
     volumes:
       - ./data:/data/db
+    networks:
+      main-network:
 
   openvpn:
     build:
@@ -62,6 +70,9 @@ services:
     volumes:
       - ./easyrsa_master:/etc/openvpn/easyrsa
       - ./ccd_master:/etc/openvpn/ccd
+    networks:
+      main-network:
+      vpn-network:
 
   ovpn-admin:
     build:
@@ -80,6 +91,8 @@ services:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - 9090:9090
+    networks:
+      main-network:
 
   grafana:
     image: grafana/grafana:latest
@@ -88,6 +101,21 @@ services:
       - ./grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yaml
     ports:
       - 3000:3000
+    networks:
+      main-network:
+
+  test_vpn:
+    image: dontrebootme/microbot:v1
+    expose:
+      - 80
+    networks:
+      vpn-network:
+        ipv4_address: 10.10.10.11
 
 networks:
+  main-network:
   vpn-network:
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.10.10.0/24
