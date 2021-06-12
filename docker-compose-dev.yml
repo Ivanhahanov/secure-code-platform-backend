@@ -9,9 +9,6 @@ services:
       - type: bind
         source: ${PWD}/api
         target: /api
-      - type: bind
-        source: ${PWD}/docker-vpn/openvpn
-        target: /etc/openvpn
     environment:
       - REDIS_PASS=$REDIS_PASS
       - MONGODB_USER=$MONGODB_USER
