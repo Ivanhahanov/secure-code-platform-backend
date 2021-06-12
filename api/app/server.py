@@ -6,10 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 
-origins = [
-    "http://localhost",
-    "http://localhost:3000",
-]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
