@@ -24,6 +24,8 @@ services:
       - REDIS_PASS=$REDIS_PASS
       - MONGODB_USER=$MONGODB_USER
       - MONGODB_PASS=$MONGODB_PASS
+    networks:
+      main-network:
 
   remove_users:
     build:
