@@ -1,5 +1,16 @@
 version: "3.7"
 services:
+  waf:
+    image: owasp/modsecurity-crs:3.3-nginx
+    ports:
+      - 443:443
+    volumes:
+      - ./modsecurity/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./modsecurity/cert.pem:/etc/nginx/conf/cert.pem
+      - ./modsecurity/key.pem:/etc/nginx/conf/key.pem
+    networks:
+      main-network:
+
   api:
     build:
       context: api
@@ -13,8 +24,6 @@ services:
       - REDIS_PASS=$REDIS_PASS
       - MONGODB_USER=$MONGODB_USER
       - MONGODB_PASS=$MONGODB_PASS
-    networks:
-      main-network:
 
   remove_users:
     build:

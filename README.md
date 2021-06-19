@@ -23,3 +23,12 @@ prod:
 docker-compose -f docker-compose-prod.yml up -d
 ```
 View [API](http://localhost)
+
+## TechnicalSupport
+`zammad/`
+
+_Note: Zammad UI port conflict with OpenVpn admin port_ 
+```
+cd zammad
+docker-compose up -d
+```
