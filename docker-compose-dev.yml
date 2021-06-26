@@ -27,6 +27,33 @@ services:
     networks:
       main-network:
 
+  remove_data:
+    build:
+      context: utils
+    command: python3 generate_test_data.py --remove
+    environment:
+      - MONGODB_USER=$MONGODB_USER
+      - MONGODB_PASS=$MONGODB_PASS
+    depends_on:
+      - mongodb
+      - api
+    networks:
+      main-network:
+
+  create_data:
+    build:
+      context: utils
+    command: python3 generate_test_data.py --create
+    environment:
+      - MONGODB_USER=$MONGODB_USER
+      - MONGODB_PASS=$MONGODB_PASS
+    depends_on:
+      - mongodb
+      - api
+      - remove_data
+    networks:
+      main-network:
+
   remove_users:
     build:
       context: utils

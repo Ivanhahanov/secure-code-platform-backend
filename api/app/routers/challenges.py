@@ -69,7 +69,7 @@ class ShortChallenge(BaseModel):
 @router.post('/list')
 def get_challenges_list(current_user: User = Depends(get_current_active_user),
                         difficult: Optional[list] = None, tags: Optional[list] = None,
-                        category: Optional[str] = None,
+                        category: Optional[list] = None,
                         page_count: int = 1, row_count: int = 10):
     skip = (page_count - 1) * row_count
     limit = row_count
@@ -77,23 +77,28 @@ def get_challenges_list(current_user: User = Depends(get_current_active_user),
     # load users solved challenges
     solved_challenges_id = users.find_one({'username': current_user.username}).get('solved_challenges_id')
     fields = {
-        "difficulty_tag": difficult,
-        "tags": tags,
-        "category": category
+        "difficulty_tag": {"$in": difficult},
+        "tags": {"$in": tags},
+        "category": {"$in": category}
     }
     # remove None fields
     fields = [
         {k: v}
         for k, v in fields.items()
-        if v is not None
+        if v["$in"]
     ]
+    if not fields:
+        challenges_slice = challenges.find(
+        ).sort(
+            "score", 1
+        ).skip(skip).limit(limit)
     # search by fields, sort by score and skip by pagecount
-    challenges_slice = challenges.find(
-        {"$and": fields}
-    ).sort(
-        "score", 1
-    ).skip(skip).limit(limit)
-
+    else:
+        challenges_slice = challenges.find(
+            {"$and": fields}
+        ).sort(
+            "score", 1
+        ).skip(skip).limit(limit)
     short_challenges = []
     for challenge in challenges_slice:
         if solved_challenges_id is not None:
