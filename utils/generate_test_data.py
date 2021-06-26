@@ -3,7 +3,7 @@ import os
 import argparse
 import pprint
 from itertools import cycle
-
+from datetime import datetime, timezone
 parser = argparse.ArgumentParser()
 parser.add_argument("--create", action='store_true', help="create test data")
 parser.add_argument("--remove", action='store_true', help="remove test data")
@@ -38,7 +38,7 @@ challenge = {
     "solutions_num": 0,
     "wrong_solutions_num": 0,
     "difficulty_rating": None,
-    "challenge_created": None,
+    "challenge_created": datetime.now(timezone.utc).isoformat(),
     "challenge_modified": None,
     "useful_resources": ["https://owasp.org/www-community/attacks/SQL_Injection"],
     "flag": "$1mple_$ql_1nj3ct10n"}
