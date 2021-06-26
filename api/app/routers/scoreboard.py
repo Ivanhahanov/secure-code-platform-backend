@@ -6,7 +6,7 @@ router = APIRouter()
 
 class ScoreboardUser(BaseModel):
     username: str
-    users_score: int = None
+    users_score: int = 0
     users_group: str = None
     num_of_solved_challenges: int = None
     place_in_scoreboard: int = None
