@@ -47,7 +47,7 @@ def upload_challenges():
     token = get_token()
     header = {
         "Authorization": f"Bearer {token}"}
-    url = "http://localhost/challenges/upload_challenges"
+    url = f"http://{args.url}/challenges/upload_challenges"
     archive = {"archive": open("challenges.tar", 'rb')}
     r = requests.post(url, headers=header, files=archive)
     print(*r.json().values())
