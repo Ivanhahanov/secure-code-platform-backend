@@ -21,12 +21,6 @@ challenges_difficult = ['easy', 'medium', 'hard', 'impossible']
 # solution_path = os.getenv('PWD') + upload_path
 
 
-class WriteUp(BaseModel):
-    author: str
-    text: str
-    source_code_text: str
-    writeup_created: datetime
-    writeup_modified: datetime
 
 
 class Challenge(BaseModel):
