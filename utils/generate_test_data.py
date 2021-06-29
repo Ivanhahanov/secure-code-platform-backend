@@ -2,7 +2,6 @@ import requests
 from pymongo import MongoClient
 import random
 import argparse
-import pprint
 from itertools import cycle
 from datetime import datetime, timezone
 
@@ -66,8 +65,8 @@ def generate_data(data):
 
 def generate_challenges():
     challenge = {
-        "title": "SQL приключения",
-        "text": "Здесь могло бы быть описание, но админ слишком ленив. Реши таск и сдай флаг",
+        "title": "Название Задание",
+        "text": "*Задача организации*, _в особенности же начало повседневной работы_ по `формированию позиции` играет важную роль в формировании форм развития. Равным образом сложившаяся структура организации представляет собой интересный эксперимент проверки соответствующий условий активизации.",
         "score": 10,
         "tags": ["sql"],
         "author": "admin",
@@ -100,7 +99,22 @@ def generate_writeups(task_names: list):
     for shortname in task_names:
         writeup = {
             "challenge_shortname": shortname,
-            "text": "test writeup in html format `some code`",
+            "text": """
+Разнообразный и богатый опыт рамки и место обучения кадров в значительной степени обуславливает создание модели развития. Таким образом постоянный количественный рост и сфера нашей активности требуют от нас анализа форм развития. 
+* Пункт 1
+* Пункт 2
+* Пункт 3
+
+Здесь какой-то код
+```
+bash -c
+echo "hello world"
+# комментарий
+python3 run_script.py
+```
+
+ещё немного кода: `docker run --rm hello-world`
+""",
         }
         url = f"http://{args.url}/writeup/new"
         r = requests.put(url, headers=header, json=writeup)
@@ -127,8 +141,8 @@ def add_sponsors():
         "Authorization": f"Bearer {token}"}
     for i in range(args.count):
         sponsor = {
-            "title": "Test",
-            "description": "Test Sponsor of our platform",
+            "title": "Организация",
+            "description": "Описание Организации",
         }
         image = {"sponsor_img": open('pt.png', 'rb')}
         url = f"http://{args.url}/sponsors/add"
@@ -145,8 +159,8 @@ def add_faq():
         "Authorization": f"Bearer {token}"}
     for i in range(args.count):
         sponsor = {
-            "question": "Where can I get some?",
-            "answer": "There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable. If you are going to use a passage of Lorem Ipsum, you need to be sure there isn't anything embarrassing hidden in the middle of text. All the Lorem Ipsum generators on the Internet tend to repeat predefined chunks as necessary, making this the first true generator on the Internet. It uses a dictionary of over 200 Latin words, combined with a handful of model sentence structures, to generate Lorem Ipsum which looks reasonable. The generated Lorem Ipsum is therefore always free from repetition, injected humour, or non-characteristic words etc.",
+            "question": "Какой то вопрос?",
+            "answer": "По своей сути рыбатекст является альтернативой традиционному lorem ipsum, который вызывает у некторых людей недоумение при попытках прочитать рыбу текст. В отличии от lorem ipsum, текст рыба на русском языке наполнит любой макет непонятным смыслом и придаст неповторимый колорит советских времен."
         }
         url = f"http://{args.url}/faq/add"
         r = requests.put(url, headers=header, json=sponsor)
