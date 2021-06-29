@@ -121,3 +121,8 @@ async def get_current_user_if_editor(current_user: User = Depends(get_current_us
     if current_user.user_role not in ('editor', 'admin'):
         raise HTTPException(status_code=403, detail="Permission denied")
     return current_user
+
+
+def markdown_to_html(data):
+    import markdown
+    return markdown.markdown(data)

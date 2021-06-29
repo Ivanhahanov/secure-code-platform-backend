@@ -21,8 +21,6 @@ challenges_difficult = ['easy', 'medium', 'hard', 'impossible']
 # solution_path = os.getenv('PWD') + upload_path
 
 
-
-
 class Challenge(BaseModel):
     shortname: str
     title: str
@@ -263,10 +261,6 @@ def upload_file(filename, file):
 #             user.solved_challenges_id[challenge_id] = datetime.now()
 #             user.users_score += challenge.score
 #             users.update_one({'username': current_user.username}, {'$set': user.dict(by_alias=True)})
-
-def markdown_to_html(data):
-    import markdown
-    return markdown.markdown(data)
 
 
 def get_challenge_flag(challenge_id):
