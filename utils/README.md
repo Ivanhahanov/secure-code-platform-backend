@@ -16,8 +16,10 @@ python3 utils/upload_challenge.py example_challenges -u admin -p JxvmsiUz
 ### create all data
 ```
 docker build -t create-data utils
-docker run --rm --network=secure-code-platform-backend_main-network create-data python3 generate_test_data.py --create -U api -u <username> -p <password>
+docker run --rm --network=secure-code-platform-backend_main-network create-data python3 generate_test_data.py --create -U api -p <password> -P <admin_password>
 ```
+* `-u` - default: test
+* `-a` - default: admin
 
 ### create challenges
 ```
