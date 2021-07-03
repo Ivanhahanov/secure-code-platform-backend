@@ -1,0 +1,3 @@
+[submodule "api/secure-code-platform-frontend"]
+	path = api/secure-code-platform-frontend
+	url = git@github.com:Evgaizen/secure-code-platform-frontend.git
