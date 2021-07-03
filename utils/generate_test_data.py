@@ -1,27 +1,45 @@
+import time
+
 import requests
 from pymongo import MongoClient
 import random
 import argparse
 from itertools import cycle
 from datetime import datetime, timezone
+import os
+import string
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--create", action='store_true', help="create test data")
 parser.add_argument("--remove", action='store_true', help="remove test data")
 parser.add_argument("--count", type=int, help="count of tasks", default=20)
-parser.add_argument("-u", "--username", type=str, help="user with editor or admin credentials", default="test")
-parser.add_argument("-p", "--password", type=str, help="users password")
-parser.add_argument("-U", "--url", type=str, help="url of platform", default="api")
-parser.add_argument("-a", "--admin", type=str, help="user with editor or admin credentials", default="admin")
-parser.add_argument("-P", "--admin_password", type=str, help="user with editor or admin credentials")
 args = parser.parse_args()
 
 mongo = MongoClient("mongodb",
-                    username="root",
-                    password="changeme")
+                    username=os.getenv("MONGODB_USER"),
+                    password=os.getenv("MONGODB_PASS"))
 db = mongo.secure_code_platform
 
 categories = []
+
+def generate_random_pass(n):
+    return ''.join([random.choice(string.ascii_letters) for _ in range(n)])
+
+
+admin = {"username": "admin",
+         "email": "admin@email.com",
+         "full_name": "Admin",
+         "disabled": False,
+         "user_role": "user",
+         "avatar_path": "",
+         "password": generate_random_pass(8)}
+
+user = {"username": "test",
+        "email": "test@email.com",
+        "full_name": "Test",
+        "disabled": False,
+        "user_role": "user",
+        "password": generate_random_pass(8)}
 
 challenges_categories = ['web', 'crypto', 'forensic', 'network', 'linux', 'reverse']
 challenges_tags = []
@@ -29,10 +47,10 @@ challenges_difficult = ['easy', 'medium', 'hard', 'impossible']
 
 
 def get_token():
-    url = f"http://{args.url}/users/token"
+    url = "http://api/users/token"
     data = {
-        "username": args.username,
-        "password": args.password,
+        "username": user['username'],
+        "password": user['password'],
     }
     r = requests.post(url, data)
     if r.status_code == 200:
@@ -44,10 +62,10 @@ def get_token():
 
 
 def get_admin_token():
-    url = f"http://{args.url}/users/token"
+    url = "http://api/users/token"
     data = {
-        "username": args.admin,
-        "password": args.admin_password,
+        "username": admin['username'],
+        "password": admin['password'],
     }
     r = requests.post(url, data)
     if r.status_code == 200:
@@ -116,16 +134,16 @@ python3 run_script.py
 ещё немного кода: `docker run --rm hello-world`
 """,
         }
-        url = f"http://{args.url}/writeup/new"
+        url = f"http://api/writeup/new"
         r = requests.put(url, headers=header, json=writeup)
         if r.status_code != 200:
             print("Error:", r.json())
         score = {
             "challenge_shortname": shortname,
-            "author": args.username,
+            "author": user['username'],
             "value": random.choice([1, -1]),
         }
-        url = f"http://{args.url}/writeup/score"
+        url = "http://api/writeup/score"
         r = requests.post(url, headers=header, json=score)
         if r.status_code != 200:
             print("Error:", r.json())
@@ -145,7 +163,7 @@ def add_sponsors():
             "description": "Описание Организации",
         }
         image = {"sponsor_img": open('pt.png', 'rb')}
-        url = f"http://{args.url}/sponsors/add"
+        url = "http://api/sponsors/add"
         r = requests.put(url, headers=header, params=sponsor, files=image)
         if r.status_code != 200:
             print("Error:", r.content)
@@ -162,23 +180,49 @@ def add_faq():
             "question": "Какой то вопрос?",
             "answer": "По своей сути рыбатекст является альтернативой традиционному lorem ipsum, который вызывает у некторых людей недоумение при попытках прочитать рыбу текст. В отличии от lorem ipsum, текст рыба на русском языке наполнит любой макет непонятным смыслом и придаст неповторимый колорит советских времен."
         }
-        url = f"http://{args.url}/faq/add"
+        url = "http://api/faq/add"
         r = requests.put(url, headers=header, json=sponsor)
         if r.status_code != 200:
             print("Error:", r.content)
             return
     print("[+] Add Faq")
 
+
+
+
+def create_user(user):
+    r = requests.put("http://api/users/register", json=user).json()
+    print(r)
+
+
+def create_test_users():
+    create_user(admin)
+    print("[+] Admin created")
+    print(admin['username'], admin['password'], sep=":")
+
+    db.users.update({"username": "admin"}, {"$set": {"user_role": "admin"}})
+    create_user(user)
+    print("[+] User created")
+    print(user['username'], user['password'], sep=":")
+
+
+def remove_test_users():
+    db.users.delete_one({"username": user["username"]})
+    db.users.delete_one({"username": admin["username"]})
+
+
 if args.create:
+    time.sleep(2)
+    create_test_users()
     challenges = generate_challenges()
     db.challenges.insert_many(challenges)
     print("[+] Add Challenges")
-    if args.username and args.password and args.url:
-        generate_writeups([challenge['shortname'] for challenge in challenges])
-    if args.admin and args.admin_password and args.url:
-        add_sponsors()
-        add_faq()
+    generate_writeups([challenge['shortname'] for challenge in challenges])
+    add_sponsors()
+    add_faq()
+    print(admin['username'], admin['password'])
+    print(user['username'], user['password'])
 
 elif args.remove:
     shortnames = [f"task{i}" for i in range(args.count)]
-    db.challenges.delete_many({"shortname": {"$in": shortnames}})
+    db.challenges.delete_many({})
