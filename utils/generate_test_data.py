@@ -22,6 +22,7 @@ db = mongo.secure_code_platform
 
 categories = []
 
+
 def generate_random_pass(n):
     return ''.join([random.choice(string.ascii_letters) for _ in range(n)])
 
@@ -76,6 +77,10 @@ def get_admin_token():
     exit(1)
 
 
+def generate_score():
+    return random.choice(range(5, 255, 5))
+
+
 def generate_data(data):
     for field in cycle(data):
         yield field
@@ -85,14 +90,12 @@ def generate_challenges():
     challenge = {
         "title": "Название Задание",
         "text": "*Задача организации*, _в особенности же начало повседневной работы_ по `формированию позиции` играет важную роль в формировании форм развития. Равным образом сложившаяся структура организации представляет собой интересный эксперимент проверки соответствующий условий активизации.",
-        "score": 10,
         "tags": ["sql"],
         "author": "admin",
         "first_blood": None,
         "solutions_num": 0,
         "wrong_solutions_num": 0,
         "difficulty_rating": None,
-        "challenge_created": datetime.now(timezone.utc).isoformat(),
         "challenge_modified": None,
         "useful_resources": ["https://owasp.org/www-community/attacks/SQL_Injection"],
         "flag": "$1mple_$ql_1nj3ct10n"}
@@ -103,7 +106,9 @@ def generate_challenges():
         {
             "shortname": f"task{i}", **challenge,
             "category": next(categories),
-            "difficulty_tag": next(difficulties)
+            "difficulty_tag": next(difficulties),
+            "score": generate_score(),
+            "challenge_created": datetime.now(timezone.utc).isoformat(),
         } for i in range(args.count)
     ]
     return challenges
@@ -186,8 +191,6 @@ def add_faq():
             print("Error:", r.content)
             return
     print("[+] Add Faq")
-
-
 
 
 def create_user(user):

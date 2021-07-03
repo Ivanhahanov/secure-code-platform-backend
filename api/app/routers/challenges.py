@@ -62,7 +62,19 @@ class ShortChallenge(BaseModel):
 def get_challenges_list(current_user: User = Depends(get_current_active_user),
                         difficult: Optional[list] = None, tags: Optional[list] = None,
                         category: Optional[list] = None,
+                        sort: Optional[str] = 'score',
+                        sort_consistency: Optional[int] = 1,
                         page_count: int = 1, row_count: int = 10):
+    sort_fields = ['score', 'date']
+    if sort not in sort_fields:
+        raise HTTPException(status_code=400, detail="invalid sort field")
+    if sort_consistency not in (1, -1):
+        raise HTTPException(status_code=400, detail="sort consistency value is not like 1 or -1")
+
+    sort_condition = [(sort, sort_consistency)]
+    if sort == 'date':
+        sort_condition = [('challenge_created', sort_consistency)]
+
     skip = (page_count - 1) * row_count
     limit = row_count
 
@@ -82,14 +94,14 @@ def get_challenges_list(current_user: User = Depends(get_current_active_user),
     if not fields:
         challenges_slice = challenges.find(
         ).sort(
-            "score", 1
+            sort_condition
         ).skip(skip).limit(limit)
     # search by fields, sort by score and skip by pagecount
     else:
         challenges_slice = challenges.find(
             {"$and": fields}
         ).sort(
-            "score", 1
+            sort_condition
         ).skip(skip).limit(limit)
     short_challenges = []
     for challenge in challenges_slice:
