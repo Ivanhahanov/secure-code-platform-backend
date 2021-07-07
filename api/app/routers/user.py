@@ -4,6 +4,7 @@ from fastapi import Depends, APIRouter, HTTPException, status, UploadFile, File
 from fastapi.security import OAuth2PasswordRequestForm
 from .scoreboard import get_users_place, ScoreboardUser
 from .extensions.avatar_generator import create_avatar
+from .challenges import users_solved_challenges
 
 db = mongo.secure_code_platform
 users = db.users
@@ -12,6 +13,7 @@ router = APIRouter()
 
 class UsersInfo(User, ScoreboardUser):
     avatar_path: str
+    users_solved_challenges: Optional[list] = None
 
 
 class ChangePassword(BaseModel):
@@ -97,7 +99,7 @@ def change_password(passwords: ChangePassword, current_user: User = Depends(get_
 @router.get("/change_avatar")
 async def change_avatar(current_user: User = Depends(get_current_active_user)):
     user = User(**users.find_one({"username": current_user.username}))
-    time_delta = datetime.now(timezone.utc) - user.modified_at
+    time_delta = datetime.now(timezone.utc) - datetime.strptime(user.modified_at, datetime.isoformat())
     if time_delta.days >= 0:
         save_avatar(current_user)
         user.modified_at = datetime.now(timezone.utc).isoformat()
@@ -112,6 +114,31 @@ def save_avatar(current_user):
     return "/".join(avatar_path.split("/")[2:])
 
 
+class SimpleUserInfo(BaseModel):
+    username: Optional[str]
+    email: Optional[str]
+    full_name: Optional[str]
+
+
+@router.post("/change")
+def change_user_info(userinfo: SimpleUserInfo, current_user: User = Depends(get_current_active_user)):
+    update_user_data = dict()
+    if userinfo.username:
+        user_in_db = users.find_one({"username": userinfo.username})
+        if user_in_db:
+            raise HTTPException(status_code=400, detail="not valid username")
+        update_user_data['username'] = userinfo.username
+    if userinfo.email:
+        update_user_data['email'] = userinfo.email
+    if userinfo.full_name:
+        update_user_data['full_name'] = userinfo.full_name
+    if update_user_data:
+        users.update_one({"username": current_user.username},
+                         {"$set": update_user_data})
+        return {"status": "updated"}
+    return {"status": False}
+
+
 @router.put("/upload_avatar")
 def put_avatar(avatar_img: UploadFile = File(...),
                current_user: User = Depends(get_current_active_user)):
@@ -119,6 +146,16 @@ def put_avatar(avatar_img: UploadFile = File(...),
     users.update_one({'username': current_user.username},
                      {'$set': {'avatar_path': avatar_path}})
     return {'status': True}
+
+
+@router.get("/info")
+def get_user_info(username: str, current_user: User = Depends(get_current_active_user)):
+    user = users.find_one({"username": username})
+    user = UsersInfo(**users.find_one({"username": username}),
+                     num_of_solved_challenges=len(user.get("solved_challenges", [])),
+                     users_solved_challenges=users_solved_challenges(username),
+                     place_in_scoreboard=get_users_place(username))
+    return user
 
 
 def upload_avatar(img, username):
