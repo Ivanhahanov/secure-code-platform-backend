@@ -97,7 +97,6 @@ def generate_challenges():
         "wrong_solutions_num": 0,
         "difficulty_rating": None,
         "challenge_modified": None,
-        "useful_resources": ["https://owasp.org/www-community/attacks/SQL_Injection"],
         "flag": "$1mple_$ql_1nj3ct10n"}
 
     categories = generate_data(challenges_categories)

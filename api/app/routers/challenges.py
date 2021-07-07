@@ -35,7 +35,6 @@ class ChallengeInfo(BaseModel):
     difficulty_rating: int = None
     challenge_created: datetime = None
     challenge_modified: datetime = None
-    useful_resources: List[str] = []
 
 class DBChallenge(ChallengeInfo):
     flag: str
