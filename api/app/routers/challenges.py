@@ -20,8 +20,7 @@ challenges_difficult = ['easy', 'medium', 'hard', 'impossible']
 
 # solution_path = os.getenv('PWD') + upload_path
 
-
-class Challenge(BaseModel):
+class ChallengeInfo(BaseModel):
     shortname: str
     title: str
     text: str
@@ -37,12 +36,8 @@ class Challenge(BaseModel):
     challenge_created: datetime = None
     challenge_modified: datetime = None
     useful_resources: List[str] = []
-    flag: str
 
-
-class ContainerChallenge(Challenge):
-    image_name: str
-    checker_image_name: str
+class DBChallenge(ChallengeInfo):
     flag: str
 
 
@@ -56,6 +51,7 @@ class ShortChallenge(BaseModel):
     difficulty_tag: str
     challenge_created: datetime = None
     solved: bool
+
 
 
 @router.post('/list')
@@ -116,12 +112,18 @@ def get_challenges_list(current_user: User = Depends(get_current_active_user),
 @router.get('/my_solved_challenges')
 def my_solved_challenges(current_user: User = Depends(get_current_active_user),
                          page_number: int = 1, row_count: int = 10):
-    solved_challenges_id = users.find_one({'username': current_user.username}).get('solved_challenges_id')
-    if not solved_challenges_id:
-        return {"challenges": None}
-    solved_short_challenges = [ShortChallenge(**challenges.find_one({'_id': ObjectId(challenge_id)}), solved=True)
-                               for challenge_id in solved_challenges_id]
-    return {"challenges": solved_short_challenges[(page_number - 1) * row_count:page_number * row_count]}
+    return {"challenges": users_solved_challenges(current_user.username, page_number, row_count)}
+
+
+def users_solved_challenges(username: str,
+                            page_number: int = 1,
+                            row_count: int = 10):
+    solved_challenges_shortnames = users.find_one({'username': username}).get('solved_challenges')
+    if not solved_challenges_shortnames:
+        return []
+    solved_short_challenges = [ShortChallenge(**challenges.find_one({'shortname': shortname}), solved=True)
+                               for shortname in solved_challenges_shortnames]
+    return solved_short_challenges[(page_number - 1) * row_count:page_number * row_count]
 
 
 @router.get('/category_list')
@@ -169,7 +171,7 @@ async def add_challenge(current_user: User = Depends(get_current_user_if_editor)
 
 @router.get('/get_challenge')
 def get_challenges(shortname: str, _: User = Depends(get_current_active_user), text_format='html'):
-    challenge = Challenge(**challenges.find_one({'shortname': shortname}))
+    challenge = ChallengeInfo(**challenges.find_one({'shortname': shortname}))
     if text_format == 'html':
         challenge.text = markdown_to_html(challenge.text)
     return challenge
@@ -202,7 +204,7 @@ def add_description_to_database(data, author):
     challenges_for_database = list()
     for shortname, values in data.items():
         print(shortname, values)
-        challenge = Challenge(**values, shortname=shortname, author=author)
+        challenge = DBChallenge(**values, shortname=shortname, author=author)
         if check_exists_shortname(challenge.shortname):
             challenges_for_database.append(challenge)
 

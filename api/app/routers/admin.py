@@ -1,6 +1,5 @@
 from fastapi import APIRouter
 from . import *
-from .challenges import ContainerChallenge
 
 import string
 import random
