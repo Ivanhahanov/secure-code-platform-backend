@@ -14,9 +14,10 @@ class Flag(BaseModel):
 
 
 class Challenge(BaseModel):
-    shortname: str = None
-    flag: str = None
-    score: int = None
+    shortname: str
+    flag: str
+    score: int
+    first_blood: str = None
 
 
 class SubmittedUser(BaseModel):
@@ -29,6 +30,7 @@ class SubmittedUser(BaseModel):
 def submit_flag(flag: Flag, current_user: User = Depends(get_current_active_user)):
     if check_flag(**flag.dict()):
         add_score(current_user.username, flag.shortname)
+        write_first_blood(current_user.username, flag.shortname)
         return {"flag": True}
     return {"flag": False}
 
@@ -42,8 +44,7 @@ def check_flag(flag, shortname):
 
 def get_challenge(shortname):
     challenge = Challenge(**challenges.find_one({"shortname": shortname}))
-    if all(challenge.dict().values()):
-        return challenge
+    return challenge
 
 
 def add_score(username, challenge_title):
@@ -53,3 +54,8 @@ def add_score(username, challenge_title):
         user.solved_challenges[challenge_title] = datetime.now(timezone.utc).isoformat()
         user.users_score += challenge.score
         users.update_one({'username': username}, {'$set': user.dict(by_alias=True)})
+
+
+def write_first_blood(username, shortname):
+    if get_challenge(shortname).first_blood is None:
+        challenges.update_one({'shortname': shortname}, {'$set': {'first_blood': username}})
