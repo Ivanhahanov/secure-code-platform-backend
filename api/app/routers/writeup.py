@@ -68,6 +68,11 @@ def count_writeup_score(writeup_id):
     return count
 
 
+@router.get('/get')
+def get_writeups(challenge_shortname: str):
+    return {'writeups': [WriteUp(**data) for data in writeup.find({"challenge_shortname": challenge_shortname})]}
+
+
 def check_writeup(new_writeup):
     shortname = new_writeup.challenge_shortname
     if not challenges.find_one({"shortname": shortname}):
