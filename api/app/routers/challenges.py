@@ -36,6 +36,7 @@ class ChallengeInfo(BaseModel):
     challenge_created: datetime = None
     challenge_modified: datetime = None
 
+
 class DBChallenge(ChallengeInfo):
     flag: str
 
@@ -50,7 +51,6 @@ class ShortChallenge(BaseModel):
     difficulty_tag: str
     challenge_created: datetime = None
     solved: bool
-
 
 
 @router.post('/list')
@@ -169,11 +169,15 @@ async def add_challenge(current_user: User = Depends(get_current_user_if_editor)
 
 
 @router.get('/get_challenge')
-def get_challenges(shortname: str, _: User = Depends(get_current_active_user), text_format='html'):
+def get_challenges(shortname: str, current_user: User = Depends(get_current_active_user), text_format='html'):
+    solved_challenges_list = users.find_one({'username': current_user.username}).get('solved_challenges')
     challenge = ChallengeInfo(**challenges.find_one({'shortname': shortname}))
+    solved = False
+    if challenge.shortname in solved_challenges_list.keys():
+        solved = True
     if text_format == 'html':
         challenge.text = markdown_to_html(challenge.text)
-    return challenge
+    return {**challenge.dict(), "solved": solved}
 
 
 @router.post('/upload_challenges')
