@@ -27,7 +27,7 @@ def get_sorted_users(page_count, row_count):
     skip = page_count * row_count
     limit = row_count
     users_slice = users.find({'user_role': {'$ne': 'admin'}}).sort(
-        "users_score", 1
+        "users_score", -1
     ).skip(skip).limit(limit)
     for place, user in enumerate(users_slice, 1):
         user_info = ScoreboardUser(**user,
