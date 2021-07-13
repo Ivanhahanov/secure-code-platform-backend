@@ -100,12 +100,14 @@ def get_challenges_list(current_user: User = Depends(get_current_active_user),
         ).skip(skip).limit(limit)
     short_challenges = []
     for challenge in challenges_slice:
-        if solved_challenges is not None:
+        print(solved_challenges)
+        if solved_challenges:
             if challenge['shortname'] in solved_challenges.keys():
                 short_challenges.append(ShortChallenge(**challenge, solved=True))
         else:
             short_challenges.append(ShortChallenge(**challenge, solved=False))
-    return {"challenges": short_challenges}
+    return {"challenges": short_challenges,
+            'num_of_challenges': challenges.find().count()}
 
 
 @router.get('/my_solved_challenges')
@@ -173,8 +175,9 @@ def get_challenges(shortname: str, current_user: User = Depends(get_current_acti
     solved_challenges_list = users.find_one({'username': current_user.username}).get('solved_challenges')
     challenge = ChallengeInfo(**challenges.find_one({'shortname': shortname}))
     solved = False
-    if challenge.shortname in solved_challenges_list.keys():
-        solved = True
+    if solved_challenges_list:
+        if challenge.shortname in solved_challenges_list.keys():
+            solved = True
     if text_format == 'html':
         challenge.text = markdown_to_html(challenge.text)
     return {**challenge.dict(), "solved": solved}
