@@ -79,7 +79,8 @@ async def read_users_me(current_user: User = Depends(get_current_active_user)):
     user = UsersInfo(**users.find_one({"username": current_user.username}),
                      num_of_solved_challenges=len(user.get("solved_challenges", [])),
                      place_in_scoreboard=get_users_place(current_user.username))
-    return user
+    total_place, total_score = get_total()
+    return {**user.dict(), 'total_score': total_score, 'total_place': total_place}
 
 
 @router.post("/change_password")
@@ -155,7 +156,8 @@ def get_user_info(username: str, current_user: User = Depends(get_current_active
                      num_of_solved_challenges=len(user.get("solved_challenges", [])),
                      users_solved_challenges=users_solved_challenges(username),
                      place_in_scoreboard=get_users_place(username))
-    return user
+    total_place, total_score = get_total()
+    return {**user.dict(), 'total_score': total_score, 'total_place': total_place}
 
 
 def upload_avatar(img, username):
@@ -175,3 +177,16 @@ def upload_avatar(img, username):
     with open(filename, 'wb') as f:
         [f.write(chunk) for chunk in iter(lambda: img.file.read(), b'')]
     return filename
+
+
+def get_total():
+    total_place = users.find({'users_role': {'$ne': 'admin'}}).count()
+    total_score = challenges.aggregate([{
+        '$group': {
+            '_id': None,
+            'total_score': {
+                '$sum': "$score"
+            }
+        }
+    }]).next()['total_score']
+    return total_place, total_score
