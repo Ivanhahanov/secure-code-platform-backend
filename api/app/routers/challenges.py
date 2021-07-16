@@ -91,6 +91,7 @@ def get_challenges_list(current_user: User = Depends(get_current_active_user),
         ).sort(
             sort_condition
         ).skip(skip).limit(limit)
+        challenges_count = challenges.count()
     # search by fields, sort by score and skip by pagecount
     else:
         challenges_slice = challenges.find(
@@ -98,6 +99,7 @@ def get_challenges_list(current_user: User = Depends(get_current_active_user),
         ).sort(
             sort_condition
         ).skip(skip).limit(limit)
+        challenges_count = challenges.find({"$and": fields}).count()
     short_challenges = []
     for challenge in challenges_slice:
         print(solved_challenges)
@@ -107,7 +109,7 @@ def get_challenges_list(current_user: User = Depends(get_current_active_user),
         else:
             short_challenges.append(ShortChallenge(**challenge, solved=False))
     return {"challenges": short_challenges,
-            'num_of_challenges': challenges.find().count()}
+            'num_of_challenges': challenges_count}
 
 
 @router.get('/my_solved_challenges')
