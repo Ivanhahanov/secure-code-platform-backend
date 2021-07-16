@@ -55,8 +55,10 @@ class ShortChallenge(BaseModel):
 
 @router.post('/list')
 def get_challenges_list(current_user: User = Depends(get_current_active_user),
-                        difficult: Optional[list] = None, tags: Optional[list] = None,
+                        difficult: Optional[list] = None,
+                        tags: Optional[list] = None,
                         category: Optional[list] = None,
+                        title: Optional[str] = None,
                         sort: Optional[str] = 'score',
                         sort_consistency: Optional[int] = 1,
                         page_count: int = 1, row_count: int = 10):
@@ -86,6 +88,8 @@ def get_challenges_list(current_user: User = Depends(get_current_active_user),
         for k, v in fields.items()
         if v["$in"]
     ]
+    if title:
+        fields.append({'$text': {'$search': title}})
     if not fields:
         challenges_slice = challenges.find(
         ).sort(
