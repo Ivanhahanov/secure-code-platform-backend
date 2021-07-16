@@ -76,7 +76,7 @@ def get_challenges_list(current_user: User = Depends(get_current_active_user),
     limit = row_count
 
     # load users solved challenges
-    solved_challenges = users.find_one({'username': current_user.username}).get('solved_challenges')
+    solved_challenges = users.find_one({'username': current_user.username}).get('solved_challenges', {})
     fields = {
         "difficulty_tag": {"$in": difficult},
         "tags": {"$in": tags},
@@ -107,10 +107,8 @@ def get_challenges_list(current_user: User = Depends(get_current_active_user),
         challenges_count = challenges.find({"$and": fields}).count()
     short_challenges = []
     for challenge in challenges_slice:
-        print(solved_challenges)
-        if solved_challenges:
-            if challenge['shortname'] in solved_challenges.keys():
-                short_challenges.append(ShortChallenge(**challenge, solved=True))
+        if challenge['shortname'] in solved_challenges.keys():
+            short_challenges.append(ShortChallenge(**challenge, solved=True))
         else:
             short_challenges.append(ShortChallenge(**challenge, solved=False))
     return {"challenges": short_challenges,
