@@ -89,7 +89,8 @@ def get_challenges_list(current_user: User = Depends(get_current_active_user),
         if v["$in"]
     ]
     if title:
-        fields.append({'$text': {'$search': title}})
+        fields.append({'title': {'$regex': title, '$options': 'i'}})
+    print(fields)
     if not fields:
         challenges_slice = challenges.find(
         ).sort(
