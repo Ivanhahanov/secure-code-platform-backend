@@ -1,4 +1,6 @@
 import datetime
+import os
+
 from . import *
 from fastapi import Depends, APIRouter, HTTPException, status, UploadFile, File
 from fastapi.security import OAuth2PasswordRequestForm
@@ -129,6 +131,12 @@ def change_user_info(userinfo: SimpleUserInfo, current_user: User = Depends(get_
         if user_in_db:
             raise HTTPException(status_code=400, detail="not valid username")
         update_user_data['username'] = userinfo.username
+        avatar_path = users.find_one({"username": current_user.username}).get('avatar_path')
+        _, extension = os.path.splitext(avatar_path)
+        new_avatar_path = f'static/img/avatar/{userinfo.username}{extension}'
+        os.rename(f'api/{avatar_path}',
+                  f'api/{new_avatar_path}')
+        update_user_data['avatar_path'] = new_avatar_path
     if userinfo.email:
         update_user_data['email'] = userinfo.email
     if userinfo.full_name:
@@ -162,18 +170,18 @@ def get_user_info(username: str, current_user: User = Depends(get_current_active
 
 def upload_avatar(img, username):
     extension = os.path.splitext(img.filename)[1].lower()
-    if extension not in ('.png', '.jpg', '.jpeg'):
+    if extension != '.png':
         HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Wrong extension {extension}"
         )
     mime_type = img.content_type
-    if mime_type not in ('image/png', 'image/jpeg'):
+    if mime_type != 'image/png':
         HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=f"Wrong Media type {extension}"
         )
-    filename = f'api/static/img/avatar/{username}{extension}'
+    filename = f'api/static/img/avatar/{username}.png'
     with open(filename, 'wb') as f:
         [f.write(chunk) for chunk in iter(lambda: img.file.read(), b'')]
     return filename
