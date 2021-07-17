@@ -130,6 +130,7 @@ def change_user_info(userinfo: SimpleUserInfo, current_user: User = Depends(get_
     if userinfo.full_name:
         update_user_data['full_name'] = userinfo.full_name
     if update_user_data:
+        update_user_data['modified_at'] = datetime.now(timezone.utc).isoformat()
         users.update_one({"username": current_user.username},
                          {"$set": update_user_data})
         return {"status": "updated"}
@@ -140,8 +141,11 @@ def change_user_info(userinfo: SimpleUserInfo, current_user: User = Depends(get_
 def put_avatar(avatar_img: UploadFile = File(...),
                current_user: User = Depends(get_current_active_user)):
     avatar_path = upload_avatar(avatar_img, current_user.username)
+    old_path = users.find_one({'username': current_user.username}).get('avatar_path')
+    os.remove(f'api/{old_path}')
     users.update_one({'username': current_user.username},
-                     {'$set': {'avatar_path': avatar_path}})
+                     {'$set': {'avatar_path': avatar_path,
+                               'modified_at': datetime.now(timezone.utc).isoformat()}})
     return {'status': True}
 
 
@@ -169,11 +173,12 @@ def upload_avatar(img, username):
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=f"Wrong Media type {extension}"
         )
-    suffix = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-    filename = f'api/static/img/avatar/{"_".join([username, suffix])}.png'
+    suffix = datetime.now().strftime("%y%m%d_%H%M%S")
+    filepath = f'static/img/avatar/{"_".join([username, suffix])}{extension}'
+    filename = f'api/{filepath}'
     with open(filename, 'wb') as f:
         [f.write(chunk) for chunk in iter(lambda: img.file.read(), b'')]
-    return filename
+    return filepath
 
 
 def get_total():
