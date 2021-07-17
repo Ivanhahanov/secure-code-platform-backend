@@ -43,7 +43,10 @@ def check_flag(flag, shortname):
 
 
 def get_challenge(shortname):
-    challenge = Challenge(**challenges.find_one({"shortname": shortname}))
+    challenge = challenges.find_one({"shortname": shortname})
+    if not challenge:
+        raise HTTPException(status_code=400, detail="Task not found")
+    challenge = Challenge(**challenge)
     return challenge
 
 
