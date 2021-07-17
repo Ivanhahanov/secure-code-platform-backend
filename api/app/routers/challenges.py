@@ -68,43 +68,43 @@ def get_challenges_list(current_user: User = Depends(get_current_active_user),
     if sort_consistency not in (1, -1):
         raise HTTPException(status_code=400, detail="sort consistency value is not like 1 or -1")
 
+    # define sort condition by score or date
     sort_condition = [(sort, sort_consistency)]
     if sort == 'date':
         sort_condition = [('challenge_created', sort_consistency)]
 
+    # calculate skip and limit fields for database pagination
     skip = (page_count - 1) * row_count
     limit = row_count
 
     # load users solved challenges
     solved_challenges = users.find_one({'username': current_user.username}).get('solved_challenges', {})
+    # define conditions for challenges search
     fields = {
         "difficulty_tag": {"$in": difficult},
         "tags": {"$in": tags},
         "category": {"$in": category}
     }
-    # remove None fields
+    # replace None fields to empty dict
     fields = [
         {k: v}
-        for k, v in fields.items()
         if v["$in"]
+        else {}
+        for k, v in fields.items()
     ]
+    # add text search to find conditions
     if title:
         fields.append({'title': {'$regex': title, '$options': 'i'}})
-    print(fields)
-    if not fields:
-        challenges_slice = challenges.find(
-        ).sort(
-            sort_condition
-        ).skip(skip).limit(limit)
-        challenges_count = challenges.count()
+
     # search by fields, sort by score and skip by pagecount
-    else:
-        challenges_slice = challenges.find(
-            {"$and": fields}
-        ).sort(
-            sort_condition
-        ).skip(skip).limit(limit)
-        challenges_count = challenges.find({"$and": fields}).count()
+    challenges_slice = challenges.find(
+        {"$and": fields}
+    ).sort(
+        sort_condition
+    ).skip(skip).limit(limit)
+    challenges_count = challenges.find({"$and": fields}).count()
+
+    # fill challenges with solved flag
     short_challenges = []
     for challenge in challenges_slice:
         if challenge['shortname'] in solved_challenges.keys():
