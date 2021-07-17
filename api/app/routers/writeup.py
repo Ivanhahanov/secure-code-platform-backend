@@ -10,10 +10,14 @@ writeup_score = db.writeup_score
 
 class WriteUp(BaseModel):
     challenge_shortname: str
+    text: str
+
+
+class DBWriteUp(WriteUp):
     author: str = None
     score: int = 0
-    text: str
     writeup_created: datetime = None
+    writeup_modified: datetime = None
 
 
 class WriteUpScore(BaseModel):
@@ -33,8 +37,11 @@ def get_writeup(shortname: str, _: User = Depends(get_current_active_user)):
 
 @router.put('/new')
 def get_writeup(new_writeup: WriteUp, current_user: User = Depends(get_current_active_user)):
-    new_writeup.writeup_created = datetime.now(timezone.utc).isoformat()
-    new_writeup.author = current_user.username
+    new_writeup = DBWriteUp(**new_writeup.dict(),
+                            writeup_created=datetime.now(timezone.utc).isoformat(),
+                            author=current_user.username,
+                            score=0,
+                            )
     check_writeup(new_writeup)
     writeup.insert_one(new_writeup.dict())
     return {"status": True, **new_writeup.dict()}
@@ -69,8 +76,28 @@ def count_writeup_score(writeup_id):
 
 
 @router.get('/get')
-def get_writeups(challenge_shortname: str):
+def get_writeups(challenge_shortname: str, _: User = Depends(get_current_active_user)):
     return {'writeups': [WriteUp(**data) for data in writeup.find({"challenge_shortname": challenge_shortname})]}
+
+
+@router.post('/update')
+def update_writeup(updated_writeup: WriteUp, current_user: User = Depends(get_current_active_user)):
+    db_writeup = DBWriteUp(**writeup.find_one({'challenge_shortname': updated_writeup.challenge_shortname,
+                                               'author': current_user.username}))
+    db_writeup.writeup_modified = datetime.now(timezone.utc).isoformat()
+    db_writeup.text = updated_writeup.text
+    writeup.update_one({'challenge_shortname': updated_writeup.challenge_shortname,
+                        'author': current_user.username}, {"$set": db_writeup.dict()})
+    return db_writeup
+
+
+@router.delete('/delete')
+def delete_writeup(challenge_shortname: str, current_user: User = Depends(get_current_active_user)):
+    result = writeup.delete_one({'challenge_shortname': challenge_shortname,
+                                 'author': current_user.username})
+    if result.raw_result['n'] == 1:
+        return {'status': result.acknowledged}
+    return {'status': False}
 
 
 def check_writeup(new_writeup):
