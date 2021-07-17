@@ -169,7 +169,8 @@ def upload_avatar(img, username):
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=f"Wrong Media type {extension}"
         )
-    filename = f'api/static/img/avatar/{username}.png'
+    suffix = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+    filename = f'api/static/img/avatar/{"_".join([username, suffix])}.png'
     with open(filename, 'wb') as f:
         [f.write(chunk) for chunk in iter(lambda: img.file.read(), b'')]
     return filename
