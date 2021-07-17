@@ -158,13 +158,13 @@ def get_user_info(username: str, current_user: User = Depends(get_current_active
 
 def upload_avatar(img, username):
     extension = os.path.splitext(img.filename)[1].lower()
-    if extension != '.png':
+    if extension not in ('.png', '.jpg', '.jpeg', '.svg'):
         HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Wrong extension {extension}"
         )
     mime_type = img.content_type
-    if mime_type != 'image/png':
+    if mime_type not in ('image/png', 'image/jpg', 'image/jpeg', 'image/svg'):
         HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=f"Wrong Media type {extension}"
