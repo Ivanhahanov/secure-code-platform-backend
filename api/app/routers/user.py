@@ -118,7 +118,6 @@ def save_avatar(current_user):
 
 
 class SimpleUserInfo(BaseModel):
-    username: Optional[str]
     email: Optional[str]
     full_name: Optional[str]
 
@@ -126,17 +125,6 @@ class SimpleUserInfo(BaseModel):
 @router.post("/change")
 def change_user_info(userinfo: SimpleUserInfo, current_user: User = Depends(get_current_active_user)):
     update_user_data = dict()
-    if userinfo.username:
-        user_in_db = users.find_one({"username": userinfo.username})
-        if user_in_db:
-            raise HTTPException(status_code=400, detail="not valid username")
-        update_user_data['username'] = userinfo.username
-        avatar_path = users.find_one({"username": current_user.username}).get('avatar_path')
-        _, extension = os.path.splitext(avatar_path)
-        new_avatar_path = f'static/img/avatar/{userinfo.username}{extension}'
-        os.rename(f'api/{avatar_path}',
-                  f'api/{new_avatar_path}')
-        update_user_data['avatar_path'] = new_avatar_path
     if userinfo.email:
         update_user_data['email'] = userinfo.email
     if userinfo.full_name:
