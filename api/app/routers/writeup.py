@@ -13,6 +13,11 @@ class WriteUp(BaseModel):
     text: str
 
 
+class ShowWriteup(WriteUp):
+    is_owner: bool = False
+    author: str
+
+
 class DBWriteUp(WriteUp):
     author: str = None
     score: int = 0
@@ -28,10 +33,12 @@ class WriteUpScore(BaseModel):
 
 
 @router.get('/')
-def get_writeup(shortname: str, _: User = Depends(get_current_active_user)):
-    writeups = [WriteUp(**db_writeup) for db_writeup in writeup.find({'challenge_shortname': shortname})]
+def get_writeup(shortname: str, current_user : User = Depends(get_current_active_user)):
+    writeups = [ShowWriteup(**db_writeup) for db_writeup in writeup.find({'challenge_shortname': shortname})]
     for data in writeups:
         data.text = markdown_to_html(data.text)
+        if data.author == current_user.username:
+            data.is_owner = True
     return writeups
 
 
