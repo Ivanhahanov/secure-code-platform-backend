@@ -1,6 +1,7 @@
 from . import *
 from fastapi import APIRouter
 from pydantic import BaseModel
+from .challenges import ChallengeInfo, DBChallenge
 
 router = APIRouter()
 challenges = db.challenges
@@ -13,13 +14,6 @@ class Flag(BaseModel):
     flag: str
 
 
-class Challenge(BaseModel):
-    shortname: str
-    flag: str
-    score: int
-    first_blood: str = None
-
-
 class SubmittedUser(BaseModel):
     username: str
     solved_challenges: Dict[str, str] = {}
@@ -29,9 +23,11 @@ class SubmittedUser(BaseModel):
 @router.post('/submit_flag')
 def submit_flag(flag: Flag, current_user: User = Depends(get_current_active_user)):
     if check_flag(**flag.dict()):
-        add_score(current_user.username, flag.shortname)
+        if add_score(current_user.username, flag.shortname) is None:
+            raise HTTPException(status_code=400, detail="User has already complete this challenge")
         write_first_blood(current_user.username, flag.shortname)
-        return {"flag": True}
+        challenge_info = get_challenge(flag.shortname)
+        return {"flag": True, "challenge": ChallengeInfo(**challenge_info.dict())}
     return {"flag": False}
 
 
@@ -46,7 +42,7 @@ def get_challenge(shortname):
     challenge = challenges.find_one({"shortname": shortname})
     if not challenge:
         raise HTTPException(status_code=400, detail="Task not found")
-    challenge = Challenge(**challenge)
+    challenge = DBChallenge(**challenge)
     return challenge
 
 
@@ -57,6 +53,9 @@ def add_score(username, challenge_title):
         user.solved_challenges[challenge_title] = datetime.now(timezone.utc).isoformat()
         user.users_score += challenge.score
         users.update_one({'username': username}, {'$set': user.dict(by_alias=True)})
+
+        challenge.solutions_num += 1
+        challenges.update_one({'shortname': challenge.shortname}, {'$set': challenge.dict()})
 
 
 def write_first_blood(username, shortname):
