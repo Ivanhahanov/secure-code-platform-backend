@@ -56,7 +56,7 @@ def add_score(username, challenge_title):
 
         challenge.solutions_num += 1
         challenges.update_one({'shortname': challenge.shortname}, {'$set': challenge.dict()})
-
+        return True
 
 def write_first_blood(username, shortname):
     if get_challenge(shortname).first_blood is None:
