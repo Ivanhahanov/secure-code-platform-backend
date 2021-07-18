@@ -33,7 +33,7 @@ class WriteUpScore(BaseModel):
 
 
 @router.get('/')
-def get_writeup(shortname: str, current_user : User = Depends(get_current_active_user)):
+def get_writeup(shortname: str, current_user: User = Depends(get_current_active_user)):
     writeups = [ShowWriteup(**db_writeup) for db_writeup in writeup.find({'challenge_shortname': shortname})]
     for data in writeups:
         data.text = markdown_to_html(data.text)
@@ -80,11 +80,6 @@ def count_writeup_score(writeup_id):
         }}]).next()['score']
     print(count)
     return count
-
-
-@router.get('/get')
-def get_writeups(challenge_shortname: str, _: User = Depends(get_current_active_user)):
-    return {'writeups': [WriteUp(**data) for data in writeup.find({"challenge_shortname": challenge_shortname})]}
 
 
 @router.post('/update')
