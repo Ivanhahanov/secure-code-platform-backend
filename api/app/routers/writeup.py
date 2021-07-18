@@ -39,7 +39,7 @@ def get_writeup(shortname: str, current_user: User = Depends(get_current_active_
         data.text = markdown_to_html(data.text)
         if data.author == current_user.username:
             data.is_owner = True
-    return writeups
+    return {'writeups': writeups}
 
 
 @router.put('/new')
