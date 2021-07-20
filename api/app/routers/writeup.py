@@ -1,12 +1,24 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter
+from pydantic import Field
 from . import *
 from datetime import datetime
 from .challenges import challenges
+from pymongo import ReturnDocument
 
 router = APIRouter()
 writeup = db.writeup
 writeup_score = db.writeup_score
 
+class PydanticObjectId(ObjectId):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v):
+        if not isinstance(v, ObjectId):
+            raise TypeError('ObjectId required')
+        return str(v)
 
 class WriteUp(BaseModel):
     challenge_shortname: str
@@ -21,6 +33,7 @@ class DBWriteUp(WriteUp):
 
 
 class ShowWriteup(DBWriteUp):
+    id: PydanticObjectId = Field(description="id", alias="_id")
     is_owner: bool = False
 
 
@@ -55,16 +68,18 @@ def get_writeup(new_writeup: WriteUp, current_user: User = Depends(get_current_a
 
 @router.post('/score')
 def writeup_users_score(score: WriteUpScore, current_user: User = Depends(get_current_active_user)):
-    writeup_id = writeup.find_one({"challenge_shortname": score.challenge_shortname, "author": score.author})
-    if writeup_id:
-        writeup_id = writeup_id.get('_id')
+    writeup_data = writeup.find_one({"challenge_shortname": score.challenge_shortname, "author": score.author})
+    if writeup_data:
+        writeup_id = writeup_data.get('_id')
         if not writeup_score.find_one({"writeup_id": writeup_id, "user": current_user.username}):
-            print(score.value)
             writeup_score.insert_one({"writeup_id": writeup_id, "user": current_user.username, "value": score.value})
             count = count_writeup_score(writeup_id)
-            writeup.update_one({"challenge_shortname": score.challenge_shortname, "author": score.author},
-                               {"$set": {"score": count}})
-            return {"status": True, "score": count}
+            result = writeup.find_one_and_update(
+                {"challenge_shortname": score.challenge_shortname, "author": score.author},
+                {"$set": {"score": count}}, return_document=ReturnDocument.AFTER)
+            print(result)
+            return {"status": True, "score": count,
+                    "writeup": ShowWriteup(**result).dict()}
     raise HTTPException(status_code=400, detail="user has already rated")
 
 
