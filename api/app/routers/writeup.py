@@ -55,9 +55,9 @@ def get_writeup(new_writeup: WriteUp, current_user: User = Depends(get_current_a
 
 @router.post('/score')
 def writeup_users_score(score: WriteUpScore, current_user: User = Depends(get_current_active_user)):
-    writeup_id = writeup.find_one({"challenge_shortname": score.challenge_shortname, "author": score.author}).get('_id')
-    print(writeup_id)
+    writeup_id = writeup.find_one({"challenge_shortname": score.challenge_shortname, "author": score.author})
     if writeup_id:
+        writeup_id = writeup_id.get('_id')
         if not writeup_score.find_one({"writeup_id": writeup_id, "user": current_user.username}):
             print(score.value)
             writeup_score.insert_one({"writeup_id": writeup_id, "user": current_user.username, "value": score.value})
