@@ -134,7 +134,12 @@ def users_solved_challenges(username: str,
 
 @router.get('/category_list')
 def category_list(_: User = Depends(get_current_active_user)):
-    return {"category_list": challenges_categories}
+    return {"category_list": challenges.distinct('category')}
+
+
+@router.get('/tags_list')
+def tags_list(_: User = Depends(get_current_active_user)):
+    return {"tags_list": challenges.distinct('tags')}
 
 
 #
