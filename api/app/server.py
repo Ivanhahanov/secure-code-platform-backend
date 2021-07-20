@@ -1,7 +1,7 @@
 import logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
-from api.app.routers import challenges, scoreboard, auth, admin, user, sponsors, faq, flags, openvpn, writeup
+from api.app.routers import challenges, scoreboard, auth, admin, user, sponsors, faq, flags, openvpn, writeup, stats
 from fastapi.staticfiles import StaticFiles
 from starlette.requests import Request
 import os
@@ -21,6 +21,7 @@ dist = StaticFiles(directory="/frontend/dist")
 app.include_router(auth.router, prefix="/auth", tags=['Auth'])
 app.include_router(user.router, prefix="/users", tags=['Users'])
 app.include_router(openvpn.router, prefix='/openvpn', tags=['OpenVpn'])
+app.include_router(stats.router, prefix='/stats', tags=['Statistics'])
 app.include_router(challenges.router, prefix="/challenges", tags=['Challenges'])
 app.include_router(writeup.router, prefix="/writeup", tags=['Writeup'])
 app.include_router(scoreboard.router, prefix="/scoreboard", tags=['Scoreboard'])
