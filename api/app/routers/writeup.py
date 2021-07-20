@@ -13,16 +13,15 @@ class WriteUp(BaseModel):
     text: str
 
 
-class ShowWriteup(WriteUp):
-    is_owner: bool = False
-    author: str
-
-
 class DBWriteUp(WriteUp):
+    challenge_shortname: str
     author: str = None
     score: int = 0
     writeup_created: datetime = None
-    writeup_modified: datetime = None
+
+
+class ShowWriteup(DBWriteUp):
+    is_owner: bool = False
 
 
 class WriteUpScore(BaseModel):
