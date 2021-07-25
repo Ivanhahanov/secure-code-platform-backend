@@ -1,10 +1,11 @@
 import logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
-from api.app.routers import challenges, scoreboard, auth, admin, user, sponsors, faq, flags, openvpn, writeup, stats
+from api.app.routers import challenges, scoreboard, auth, admin, user, sponsors, faq, flags, openvpn, writeup, stats, info
 from fastapi.staticfiles import StaticFiles
 from starlette.requests import Request
 import os
+
 app = FastAPI()
 logging.basicConfig(level=logging.INFO)
 origins = ["*"]
@@ -29,6 +30,7 @@ app.include_router(flags.router, prefix='/flag', tags=['Flags'])
 app.include_router(admin.router, prefix='/admin', tags=['Admin'])
 app.include_router(faq.router, prefix='/faq', tags=['FAQ'])
 app.include_router(sponsors.router, prefix='/sponsors', tags=['Sponsors'])
+app.include_router(info.router, prefix='/info', tags=['Info'])
 
 
 @app.get("/{path:path}", name="catch-all")
