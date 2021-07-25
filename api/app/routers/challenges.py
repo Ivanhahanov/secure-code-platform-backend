@@ -118,7 +118,10 @@ def get_challenges_list(current_user: User = Depends(get_current_active_user),
 @router.get('/my_solved_challenges')
 def my_solved_challenges(current_user: User = Depends(get_current_active_user),
                          page_number: int = 1, row_count: int = 10):
-    return {"challenges": users_solved_challenges(current_user.username, page_number, row_count)}
+    solved_challenges = users_solved_challenges(current_user.username, page_number, row_count)
+
+    return {"challenges": solved_challenges,
+            "num_of_challenges": len(solved_challenges)}
 
 
 def users_solved_challenges(username: str,
